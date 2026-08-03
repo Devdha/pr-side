@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title data-i18n="optionsPageTitle">PR Side Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="options">
+      <h1 data-i18n="optionsPageTitle">PR Side Settings</h1>
+
+      <fieldset>
+        <legend data-i18n="groupModeLegend">Group mode</legend>
+        <label>
+          <input type="radio" name="groupMode" value="single" />
+          <span data-i18n="singleGroupLabel">One combined “PR” group</span>
+        </label>
+        <label>
+          <input type="radio" name="groupMode" value="split" />
+          <span data-i18n="splitGroupLabel">Two groups: “My PRs” and “Review requests”</span>
+        </label>
+      </fieldset>
+
+      <label class="interval-label">
+        <span data-i18n="syncIntervalLabel">Sync interval (minutes)</span>
+        <input id="syncInterval" type="number" min="1" step="1" />
+      </label>
+
+      <label class="interval-label">
+        <span data-i18n="maxAgeDaysLabel">Show PRs active within (days)</span>
+        <input id="maxAgeDays" type="number" min="0" step="1" />
+        <span class="hint" data-i18n="showAllHint">0 = show all</span>
+      </label>
+
+      <button id="saveButton" type="button" data-i18n="save">Save</button>
+      <p id="saveFeedback" class="save-feedback" role="status"></p>
+    </main>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title data-i18n="extensionShortName">PR Side</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="popup">
+      <header class="brand">
+        <img class="brand-icon" src="../icons/icon-32.png" alt="" width="32" height="32" />
+        <div>
+          <h1 data-i18n="extensionShortName">PR Side</h1>
+          <p class="brand-tagline" data-i18n="popupTagline">GitHub PR Tabs</p>
+        </div>
+      </header>
+
+      <section id="statusSection" class="status-card" data-state="loading" aria-live="polite">
+        <div class="status-summary">
+          <span class="status-dot" aria-hidden="true"></span>
+          <p id="statusLine" class="status-line" data-i18n="loading">Loading...</p>
+        </div>
+        <p id="statusMeta" class="status-meta" hidden></p>
+        <a id="loginLink" class="login-link" href="https://github.com/login" target="_blank" hidden>
+          <span data-i18n="loginPrompt">Sign in to GitHub</span>
+        </a>
+      </section>
+
+      <section class="metrics">
+        <div class="metric"><strong id="authoredCount">0</strong><span data-i18n="groupAuthored">My PRs</span></div>
+        <span class="metric-divider" aria-hidden="true"></span>
+        <div class="metric"><strong id="reviewCount">0</strong><span data-i18n="groupReview">Review requests</span></div>
+      </section>
+
+      <button id="syncButton" class="primary-button" type="button" data-i18n="syncNow">Sync now</button>
+      <button id="optionsButton" class="link-button" type="button"><span data-i18n="openSettings">Settings</span><span aria-hidden="true"> →</span></button>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

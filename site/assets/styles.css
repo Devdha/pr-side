@@ -1,0 +1,259 @@
+:root {
+  color-scheme: light dark;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --background: #f6f8fa;
+  --surface: rgba(255, 255, 255, 0.9);
+  --surface-strong: #ffffff;
+  --text: #1f2328;
+  --muted: #59636e;
+  --border: #d8dee4;
+  --accent: #0969da;
+  --accent-soft: #ddf4ff;
+  --shadow: 0 18px 48px rgba(31, 35, 40, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(9, 105, 218, 0.12), transparent 30rem),
+    var(--background);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+a {
+  color: var(--accent);
+}
+
+.shell {
+  width: min(100% - 32px, 880px);
+  margin: 0 auto;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 28px 0;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.brand img {
+  width: 42px;
+  height: 42px;
+}
+
+.brand strong,
+.brand span {
+  display: block;
+}
+
+.brand strong {
+  line-height: 1.15;
+}
+
+.brand span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.language-nav {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.language-nav a {
+  padding: 5px 10px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.language-nav a:hover,
+.language-nav a:focus-visible {
+  color: var(--text);
+  background: var(--accent-soft);
+  outline: none;
+}
+
+.policy {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.hero {
+  padding: clamp(30px, 7vw, 60px);
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(140deg, var(--surface-strong), var(--accent-soft));
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2.1rem, 6vw, 3.6rem);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+}
+
+.lead {
+  max-width: 670px;
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.updated {
+  margin: 24px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.summary-card {
+  padding: 16px;
+  border: 1px solid rgba(9, 105, 218, 0.18);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--surface-strong) 82%, transparent);
+}
+
+.summary-card strong,
+.summary-card span {
+  display: block;
+}
+
+.summary-card strong {
+  font-size: 0.92rem;
+}
+
+.summary-card span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.content {
+  padding: clamp(28px, 7vw, 60px);
+}
+
+.language-section + .language-section {
+  margin-top: 70px;
+  padding-top: 56px;
+  border-top: 1px solid var(--border);
+}
+
+h2 {
+  margin: 0 0 10px;
+  font-size: 1.65rem;
+  letter-spacing: -0.025em;
+}
+
+h3 {
+  margin: 34px 0 8px;
+  font-size: 1.08rem;
+  letter-spacing: -0.01em;
+}
+
+p,
+ul {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+ul {
+  padding-left: 22px;
+}
+
+li + li {
+  margin-top: 7px;
+}
+
+code {
+  padding: 0.12em 0.36em;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+  font-size: 0.88em;
+}
+
+.site-footer {
+  padding: 26px 0 42px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  text-align: center;
+}
+
+@media (max-width: 680px) {
+  .site-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0d1117;
+    --surface: rgba(22, 27, 34, 0.9);
+    --surface-strong: #161b22;
+    --text: #f0f6fc;
+    --muted: #9ba7b4;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-soft: #102a44;
+    --shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "pr-side",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Unofficial helper that organizes GitHub pull requests into Chrome tab groups.",
+  "license": "MIT",
+  "author": "Donghun Ha",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Devdha/pr-side"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "verify:build": "npm run build && node scripts/verify-build.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.280",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  },
+  "allowScripts": {
+    "esbuild@0.24.2": true,
+    "esbuild@0.21.5": true
+  }
+}

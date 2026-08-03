@@ -1,0 +1,161 @@
+{
+  "extensionName": {
+    "message": "PR Side – GitHub PR Tabs",
+    "description": "Full extension name shown by Chrome and in the Web Store."
+  },
+  "extensionShortName": {
+    "message": "PR Side",
+    "description": "Short product name used in compact Chrome UI and headings."
+  },
+  "extensionDescription": {
+    "message": "Unofficial helper that organizes your GitHub pull requests into Chrome tab groups.",
+    "description": "Extension description shown by Chrome and in the Web Store."
+  },
+  "actionTitle": {
+    "message": "Open PR Side",
+    "description": "Tooltip for the extension toolbar action."
+  },
+  "popupTagline": {
+    "message": "GitHub PR Tabs",
+    "description": "Short descriptor shown below the PR Side brand in the popup."
+  },
+  "loading": {
+    "message": "Loading...",
+    "description": "Popup status while saved state is loading."
+  },
+  "notSyncedYet": {
+    "message": "Not synced yet",
+    "description": "Popup status before the first synchronization."
+  },
+  "lastSynced": {
+    "message": "Last synced: $TIME$",
+    "description": "Popup status showing the last synchronization time.",
+    "placeholders": {
+      "time": {
+        "content": "$1"
+      }
+    }
+  },
+  "loginPrompt": {
+    "message": "Sign in to GitHub",
+    "description": "Link inviting a signed-out user to sign in."
+  },
+  "syncNow": {
+    "message": "Sync now",
+    "description": "Button that starts synchronization."
+  },
+  "syncing": {
+    "message": "Syncing...",
+    "description": "Temporary button label while synchronization is running."
+  },
+  "openSettings": {
+    "message": "Settings",
+    "description": "Button that opens the extension settings page."
+  },
+  "prCounts": {
+    "message": "My PRs $AUTHORED$ · Review requests $REVIEWS$",
+    "description": "Popup summary of authored and review-requested PR counts.",
+    "placeholders": {
+      "authored": {
+        "content": "$1"
+      },
+      "reviews": {
+        "content": "$2"
+      }
+    }
+  },
+  "loggedOut": {
+    "message": "You are signed out of GitHub.",
+    "description": "Popup status when the GitHub session is signed out."
+  },
+  "syncError": {
+    "message": "Sync error: $ERROR$",
+    "description": "Popup status wrapping a synchronization error message.",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "unknownError": {
+    "message": "Unknown error",
+    "description": "Fallback error when no detailed error is available."
+  },
+  "optionsPageTitle": {
+    "message": "PR Side Settings",
+    "description": "Title and heading of the settings page."
+  },
+  "groupModeLegend": {
+    "message": "Group mode",
+    "description": "Legend for the tab group mode fieldset."
+  },
+  "singleGroupLabel": {
+    "message": "One combined “PR” group",
+    "description": "Option to place all PRs in one tab group."
+  },
+  "splitGroupLabel": {
+    "message": "Two groups: “My PRs” and “Review requests”",
+    "description": "Option to split authored and review-requested PRs."
+  },
+  "syncIntervalLabel": {
+    "message": "Sync interval (minutes)",
+    "description": "Label for synchronization interval input."
+  },
+  "maxAgeDaysLabel": {
+    "message": "Show PRs active within (days)",
+    "description": "Label for the maximum PR activity age input."
+  },
+  "showAllHint": {
+    "message": "0 = show all",
+    "description": "Hint explaining how to disable the activity age filter."
+  },
+  "save": {
+    "message": "Save",
+    "description": "Button that saves extension settings."
+  },
+  "saved": {
+    "message": "Saved.",
+    "description": "Feedback shown after settings are saved."
+  },
+  "groupSingle": {
+    "message": "PR",
+    "description": "Chrome tab group title for combined PR mode."
+  },
+  "groupAuthored": {
+    "message": "My PRs",
+    "description": "Chrome tab group title for authored PRs."
+  },
+  "groupReview": {
+    "message": "Review requests",
+    "description": "Chrome tab group title for review-requested PRs."
+  },
+  "noUsableWindow": {
+    "message": "No usable Chrome window was found.",
+    "description": "Error when no normal Chrome window can receive tabs."
+  },
+  "githubLoggedOutError": {
+    "message": "Your GitHub session has expired.",
+    "description": "Internal error message for an expired GitHub session."
+  },
+  "githubHttpError": {
+    "message": "GitHub request failed (HTTP $STATUS$)",
+    "description": "Error for an unsuccessful GitHub HTTP response.",
+    "placeholders": {
+      "status": {
+        "content": "$1"
+      }
+    }
+  },
+  "suspectStatus": {
+    "message": "Could not read the PR list. GitHub's page format may have changed. Existing tabs are preserved.",
+    "description": "Popup warning shown while a sudden empty PR result is being verified."
+  },
+  "syncRequestFailed": {
+    "message": "The sync request failed. Please try again in a moment.",
+    "description": "Popup status when the sync message to the background worker fails."
+  },
+  "allCaughtUp": {
+    "message": "You're all caught up",
+    "description": "Popup status after a successful synchronization."
+  }
+}

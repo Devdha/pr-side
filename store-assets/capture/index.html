@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en" data-lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PR Side Store Screenshot</title>
+    <link rel="icon" href="../../site/assets/pr-side.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="capture.css" />
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const lang = params.get("lang") === "ko" ? "ko" : "en";
+      const theme = params.get("theme") === "dark" ? "dark" : "light";
+      document.documentElement.lang = lang;
+      document.documentElement.dataset.lang = lang;
+      document.documentElement.dataset.theme = theme;
+
+      window.addEventListener("DOMContentLoaded", () => {
+        const canvas = document.querySelector(".canvas");
+        const scale = document.documentElement.clientWidth / 1280;
+        canvas.style.transform = `scale(${scale})`;
+        canvas.style.transformOrigin = "top left";
+        document.body.style.height = `${800 * scale}px`;
+      });
+    </script>
+  </head>
+  <body>
+    <main class="canvas" aria-label="PR Side product overview">
+      <header class="hero-copy">
+        <div class="product-mark">
+          <img src="../../site/assets/pr-side.svg" alt="" width="44" height="44" />
+          <strong>PR Side</strong>
+        </div>
+        <div class="hero-message">
+          <h1 class="en">Every pull request, right where you work.</h1>
+          <h1 class="ko">모든 PR을, 지금 일하는 곳에서.</h1>
+          <p class="en">Authored PRs and review requests, organized automatically.</p>
+          <p class="ko">내가 작성한 PR과 리뷰 요청을 자동으로 정리합니다.</p>
+        </div>
+      </header>
+
+      <section class="browser-window" aria-label="Demo Chrome workspace">
+        <div class="browser-topbar">
+          <div class="window-controls" aria-hidden="true">
+            <i></i><i></i><i></i>
+          </div>
+          <div class="tab-strip">
+            <div class="tab-group group-authored">
+              <span class="group-label en">My PRs</span>
+              <span class="group-label ko">내 PR</span>
+              <span class="tab-count">4</span>
+            </div>
+            <div class="browser-tab active">
+              <span class="page-dot blue"></span>
+              <span class="en">Polish dark mode tokens</span>
+              <span class="ko">다크 모드 토큰 다듬기</span>
+            </div>
+            <div class="browser-tab">
+              <span class="page-dot blue"></span>
+              <span class="en">Improve PR filters</span>
+              <span class="ko">PR 필터 개선</span>
+            </div>
+            <div class="tab-group group-review">
+              <span class="group-label en">Review requests</span>
+              <span class="group-label ko">리뷰 요청</span>
+              <span class="tab-count">2</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="browser-toolbar">
+          <span class="nav-icon">‹</span>
+          <span class="nav-icon muted">›</span>
+          <span class="nav-icon">↻</span>
+          <div class="address-bar">
+            <span class="lock-dot"></span>
+            <span>github.com/pulls</span>
+          </div>
+          <div class="toolbar-extension">
+            <img src="../../site/assets/pr-side.svg" alt="PR Side" width="24" height="24" />
+          </div>
+        </div>
+
+        <div class="workspace">
+          <section class="pulls-panel" aria-label="Demo pull requests">
+            <div class="pulls-header">
+              <div>
+                <p class="section-kicker en">Pull requests</p>
+                <p class="section-kicker ko">Pull requests</p>
+                <h2 class="en">Your work, neatly grouped</h2>
+                <h2 class="ko">내 작업을 깔끔한 그룹으로</h2>
+              </div>
+              <span class="demo-badge en">Demo workspace</span>
+              <span class="demo-badge ko">데모 화면</span>
+            </div>
+
+            <div class="filter-row">
+              <span class="filter active en">Created by you</span>
+              <span class="filter active ko">내가 작성</span>
+              <span class="filter en">Review requested</span>
+              <span class="filter ko">리뷰 요청</span>
+              <span class="filter en">Recently active</span>
+              <span class="filter ko">최근 활동</span>
+            </div>
+
+            <div class="pr-list">
+              <article class="pr-row">
+                <span class="pr-state">⌁</span>
+                <div>
+                  <strong class="en">Polish dark mode tokens</strong>
+                  <strong class="ko">다크 모드 토큰 다듬기</strong>
+                  <p>acme-labs/design-system · #248</p>
+                </div>
+                <span class="activity en">Updated now</span>
+                <span class="activity ko">방금 업데이트</span>
+              </article>
+              <article class="pr-row">
+                <span class="pr-state">⌁</span>
+                <div>
+                  <strong class="en">Improve pull request filters</strong>
+                  <strong class="ko">Pull Request 필터 개선</strong>
+                  <p>acme-labs/web · #731</p>
+                </div>
+                <span class="activity en">12m ago</span>
+                <span class="activity ko">12분 전</span>
+              </article>
+              <article class="pr-row">
+                <span class="pr-state review">⌁</span>
+                <div>
+                  <strong class="en">Document keyboard shortcuts</strong>
+                  <strong class="ko">키보드 단축키 문서화</strong>
+                  <p>acme-labs/docs · #184</p>
+                </div>
+                <span class="activity en">Review requested</span>
+                <span class="activity ko">리뷰 요청됨</span>
+              </article>
+            </div>
+          </section>
+
+          <aside class="popup-shell" aria-label="PR Side popup">
+            <div class="popup-brand">
+              <img src="../../site/assets/pr-side.svg" alt="" width="32" height="32" />
+              <div>
+                <h2>PR Side</h2>
+                <p>GitHub PR Tabs</p>
+              </div>
+            </div>
+
+            <div class="status-card">
+              <div class="status-summary">
+                <span class="status-dot"></span>
+                <strong class="en">You're all caught up</strong>
+                <strong class="ko">모두 최신 상태예요</strong>
+              </div>
+              <p class="en">Last synced: just now</p>
+              <p class="ko">마지막 동기화: 방금 전</p>
+            </div>
+
+            <div class="metrics">
+              <div class="metric">
+                <strong>4</strong>
+                <span class="en">My PRs</span>
+                <span class="ko">내 PR</span>
+              </div>
+              <i></i>
+              <div class="metric">
+                <strong>2</strong>
+                <span class="en">Review requests</span>
+                <span class="ko">리뷰 요청</span>
+              </div>
+            </div>
+
+            <button type="button" tabindex="-1" class="en">Sync now</button>
+            <button type="button" tabindex="-1" class="ko">지금 동기화</button>
+            <p class="settings en">Settings <span>→</span></p>
+            <p class="settings ko">설정 <span>→</span></p>
+          </aside>
+        </div>
+      </section>
+
+      <p class="disclaimer en">Unofficial and independent · Pull-request data is processed in your browser</p>
+      <p class="disclaimer ko">비공식·독립 확장 프로그램 · PR 정보는 브라우저 안에서 처리됩니다</p>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,161 @@
+{
+  "extensionName": {
+    "message": "PR Side – GitHub PR Tabs",
+    "description": "Full extension name shown by Chrome and in the Web Store."
+  },
+  "extensionShortName": {
+    "message": "PR Side",
+    "description": "Short product name used in compact Chrome UI and headings."
+  },
+  "extensionDescription": {
+    "message": "GitHub PR을 Chrome 탭 그룹으로 정리하는 비공식 도우미입니다.",
+    "description": "Extension description shown by Chrome and in the Web Store."
+  },
+  "actionTitle": {
+    "message": "PR Side 열기",
+    "description": "Tooltip for the extension toolbar action."
+  },
+  "popupTagline": {
+    "message": "GitHub PR Tabs",
+    "description": "Short descriptor shown below the PR Side brand in the popup."
+  },
+  "loading": {
+    "message": "불러오는 중...",
+    "description": "Popup status while saved state is loading."
+  },
+  "notSyncedYet": {
+    "message": "아직 동기화하지 않음",
+    "description": "Popup status before the first synchronization."
+  },
+  "lastSynced": {
+    "message": "마지막 동기화: $TIME$",
+    "description": "Popup status showing the last synchronization time.",
+    "placeholders": {
+      "time": {
+        "content": "$1"
+      }
+    }
+  },
+  "loginPrompt": {
+    "message": "GitHub에 로그인하세요",
+    "description": "Link inviting a signed-out user to sign in."
+  },
+  "syncNow": {
+    "message": "지금 동기화",
+    "description": "Button that starts synchronization."
+  },
+  "syncing": {
+    "message": "동기화 중...",
+    "description": "Temporary button label while synchronization is running."
+  },
+  "openSettings": {
+    "message": "설정",
+    "description": "Button that opens the extension settings page."
+  },
+  "prCounts": {
+    "message": "내 PR $AUTHORED$개 · 리뷰 요청 $REVIEWS$개",
+    "description": "Popup summary of authored and review-requested PR counts.",
+    "placeholders": {
+      "authored": {
+        "content": "$1"
+      },
+      "reviews": {
+        "content": "$2"
+      }
+    }
+  },
+  "loggedOut": {
+    "message": "GitHub 로그아웃 상태입니다.",
+    "description": "Popup status when the GitHub session is signed out."
+  },
+  "syncError": {
+    "message": "동기화 오류: $ERROR$",
+    "description": "Popup status wrapping a synchronization error message.",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "unknownError": {
+    "message": "알 수 없는 오류",
+    "description": "Fallback error when no detailed error is available."
+  },
+  "optionsPageTitle": {
+    "message": "PR Side 설정",
+    "description": "Title and heading of the settings page."
+  },
+  "groupModeLegend": {
+    "message": "그룹 모드",
+    "description": "Legend for the tab group mode fieldset."
+  },
+  "singleGroupLabel": {
+    "message": "통합 “PR” 그룹 1개",
+    "description": "Option to place all PRs in one tab group."
+  },
+  "splitGroupLabel": {
+    "message": "“내 PR” / “리뷰 요청” 그룹 2개",
+    "description": "Option to split authored and review-requested PRs."
+  },
+  "syncIntervalLabel": {
+    "message": "동기화 주기 (분)",
+    "description": "Label for synchronization interval input."
+  },
+  "maxAgeDaysLabel": {
+    "message": "최근 활동 기준 표시 기간(일)",
+    "description": "Label for the maximum PR activity age input."
+  },
+  "showAllHint": {
+    "message": "0 = 전체 표시",
+    "description": "Hint explaining how to disable the activity age filter."
+  },
+  "save": {
+    "message": "저장",
+    "description": "Button that saves extension settings."
+  },
+  "saved": {
+    "message": "저장되었습니다.",
+    "description": "Feedback shown after settings are saved."
+  },
+  "groupSingle": {
+    "message": "PR",
+    "description": "Chrome tab group title for combined PR mode."
+  },
+  "groupAuthored": {
+    "message": "내 PR",
+    "description": "Chrome tab group title for authored PRs."
+  },
+  "groupReview": {
+    "message": "리뷰 요청",
+    "description": "Chrome tab group title for review-requested PRs."
+  },
+  "noUsableWindow": {
+    "message": "사용 가능한 Chrome 창을 찾을 수 없습니다.",
+    "description": "Error when no normal Chrome window can receive tabs."
+  },
+  "githubLoggedOutError": {
+    "message": "GitHub 세션이 만료되었습니다.",
+    "description": "Internal error message for an expired GitHub session."
+  },
+  "githubHttpError": {
+    "message": "GitHub 응답 오류 (HTTP $STATUS$)",
+    "description": "Error for an unsuccessful GitHub HTTP response.",
+    "placeholders": {
+      "status": {
+        "content": "$1"
+      }
+    }
+  },
+  "suspectStatus": {
+    "message": "PR 목록을 읽지 못했습니다 (GitHub 페이지 형식이 바뀌었을 수 있음). 기존 탭은 유지됩니다.",
+    "description": "Popup warning shown while a sudden empty PR result is being verified."
+  },
+  "syncRequestFailed": {
+    "message": "동기화 요청에 실패했습니다. 잠시 후 다시 시도해주세요.",
+    "description": "Popup status when the sync message to the background worker fails."
+  },
+  "allCaughtUp": {
+    "message": "모두 최신 상태예요",
+    "description": "Popup status after a successful synchronization."
+  }
+}

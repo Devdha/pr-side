@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="PR Side privacy policy. Learn how the extension processes GitHub pull-request information locally in your browser."
+    />
+    <meta name="theme-color" content="#0969da" />
+    <link rel="canonical" href="https://prside.102lab.com/privacy/" />
+    <link rel="icon" href="/assets/pr-side.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <title>Privacy Policy · PR Side</title>
+  </head>
+  <body>
+    <header class="site-header shell">
+      <a class="brand" href="/privacy/" aria-label="PR Side privacy policy">
+        <img src="/assets/pr-side.svg" alt="" width="42" height="42" />
+        <span>
+          <strong>PR Side</strong>
+          <span>Unofficial GitHub PR tab helper</span>
+        </span>
+      </a>
+      <nav class="language-nav" aria-label="Policy languages">
+        <a href="#english" lang="en">English</a>
+        <a href="#korean" lang="ko">한국어</a>
+      </nav>
+    </header>
+
+    <main class="policy shell">
+      <section class="hero" aria-labelledby="policy-title">
+        <p class="eyebrow">Privacy, plainly stated</p>
+        <h1 id="policy-title">Privacy Policy</h1>
+        <p class="lead">
+          PR Side organizes your GitHub pull requests into Chrome tab groups. Pull-request
+          information stays in your browser and is never sent to a PR Side server.
+        </p>
+        <p class="updated">Effective and last updated: August 3, 2026</p>
+        <div class="summary-grid" aria-label="Privacy summary">
+          <div class="summary-card">
+            <strong>Local processing</strong>
+            <span>PR metadata is used in your browser to manage tabs.</span>
+          </div>
+          <div class="summary-card">
+            <strong>No ads or analytics</strong>
+            <span>No tracking, profiling, advertising SDKs, or data brokers.</span>
+          </div>
+          <div class="summary-card">
+            <strong>No PR Side server</strong>
+            <span>Necessary network requests go only to GitHub over HTTPS.</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="content">
+        <article id="english" class="language-section" aria-labelledby="english-title">
+          <h2 id="english-title">English</h2>
+          <p>
+            PR Side is an unofficial browser extension that organizes GitHub pull requests
+            into Chrome tab groups. Its single purpose is to organize pull requests authored
+            by the signed-in user and pull requests awaiting that user's review.
+          </p>
+
+          <h3>Information PR Side processes</h3>
+          <p>PR Side processes only the information needed to provide this purpose:</p>
+          <ul>
+            <li>
+              GitHub pull-request titles, URLs, repository names, pull-request numbers, and
+              recent-activity timestamps returned by the signed-in user's authored and
+              review-requested pull-request pages;
+            </li>
+            <li>
+              the URLs and titles of open GitHub pull-request tabs, so PR Side can avoid
+              duplicates and maintain the correct tab groups;
+            </li>
+            <li>whether the existing GitHub browser session is signed in or signed out; and</li>
+            <li>
+              user-selected settings, such as grouping mode, synchronization interval, and
+              recent-activity range.
+            </li>
+          </ul>
+          <p>
+            PR Side relies on the GitHub session already managed by the browser. It does not
+            read or store GitHub passwords or authentication-cookie values.
+          </p>
+
+          <h3>How information is used</h3>
+          <p>
+            GitHub pull-request information is processed in the user's browser only to
+            create, update, and remove Chrome tabs and tab groups requested by the user. PR
+            Side does not use this information for analytics, advertising, profiling, credit
+            decisions, or any unrelated purpose.
+          </p>
+
+          <h3>Storage and retention</h3>
+          <p>PR Side stores the following extension state:</p>
+          <ul>
+            <li>
+              user-selected settings in <code>chrome.storage.sync</code>; Chrome may
+              synchronize these settings between browsers where the user has enabled Chrome
+              Sync; and
+            </li>
+            <li>
+              the last synchronization status, pull-request counts, and Chrome tab-group
+              identifiers in <code>chrome.storage.local</code> on the user's device.
+            </li>
+          </ul>
+          <p>
+            PR Side does not store pull-request titles, URLs, repository names, or page
+            contents in <code>chrome.storage</code> or on a developer-operated server.
+            Users can remove extension settings and local state by uninstalling PR Side or
+            clearing the extension's data in Chrome. Synced settings can also be managed
+            through the user's Chrome Sync settings.
+          </p>
+
+          <h3>Network communication and sharing</h3>
+          <p>
+            PR Side sends only the HTTPS requests necessary to retrieve pull-request pages
+            from <a href="https://github.com">github.com</a>. Those requests use the
+            browser's existing GitHub session and are subject to GitHub's privacy practices.
+          </p>
+          <p>
+            PR Side has no developer-operated application server. It does not transmit
+            GitHub pull-request information to PR Side's developer, advertising networks,
+            analytics providers, data brokers, or other third parties. It does not sell user
+            data. Chrome may synchronize non-content settings stored through
+            <code>chrome.storage.sync</code> according to the user's Chrome Sync
+            configuration and Google's applicable privacy practices.
+          </p>
+
+          <h3>This policy website</h3>
+          <p>
+            This privacy-policy page is hosted by Cloudflare. PR Side does not add analytics,
+            advertising scripts, tracking pixels, or cookies to this page. Cloudflare may
+            process standard request information, such as IP addresses and security logs, to
+            deliver and protect the page under Cloudflare's applicable privacy practices.
+            Visiting this page is separate from using the PR Side extension.
+          </p>
+
+          <h3>Permissions</h3>
+          <ul>
+            <li>
+              <code>https://github.com/*</code>: retrieves the signed-in user's authored and
+              review-requested pull-request pages and opens matching pull requests.
+            </li>
+            <li>
+              <code>tabs</code> and <code>tabGroups</code>: finds, creates, groups, updates,
+              and removes GitHub pull-request tabs managed by PR Side.
+            </li>
+            <li>
+              <code>storage</code>: saves user-selected settings and local synchronization
+              state.
+            </li>
+            <li>
+              <code>alarms</code>: runs synchronization at the interval selected by the user.
+            </li>
+          </ul>
+
+          <h3>Limited Use</h3>
+          <p>
+            PR Side's use of information received from Chrome APIs complies with the Chrome
+            Web Store User Data Policy, including the Limited Use requirements. Information
+            is used only to provide or improve PR Side's user-facing single purpose. It is
+            not transferred for advertising, sold to data brokers, used for creditworthiness
+            or lending, or made available for humans to read, except where required by law
+            or expressly requested by the user for support.
+          </p>
+
+          <h3>Security</h3>
+          <p>
+            All GitHub requests made by PR Side use HTTPS. PR Side does not load or execute
+            remotely hosted code.
+          </p>
+
+          <h3>Changes to this policy</h3>
+          <p>
+            Material changes to this policy will be published at this URL with an updated
+            effective date before a corresponding extension update is released.
+          </p>
+
+          <h3>Contact</h3>
+          <p>
+            Privacy questions can be submitted through the support contact listed on the PR
+            Side Chrome Web Store page.
+          </p>
+        </article>
+
+        <article id="korean" class="language-section" lang="ko" aria-labelledby="korean-title">
+          <h2 id="korean-title">한국어</h2>
+          <p>
+            PR Side는 GitHub Pull Request를 Chrome 탭 그룹으로 정리하는 비공식 브라우저
+            확장 프로그램입니다. 로그인한 사용자가 작성한 PR과 해당 사용자에게 리뷰가
+            요청된 PR을 정리하는 것이 PR Side의 단일 목적입니다.
+          </p>
+
+          <h3>PR Side가 처리하는 정보</h3>
+          <p>PR Side는 위 기능 제공에 필요한 다음 정보만 처리합니다.</p>
+          <ul>
+            <li>
+              로그인한 사용자의 작성 PR 및 리뷰 요청 PR 페이지에 표시되는 PR 제목, URL,
+              저장소 이름, PR 번호, 최근 활동 시각
+            </li>
+            <li>중복 탭 방지와 탭 그룹 유지를 위한 현재 열린 GitHub PR 탭의 URL과 제목</li>
+            <li>브라우저에 저장된 기존 GitHub 세션의 로그인 또는 로그아웃 상태</li>
+            <li>그룹 모드, 동기화 주기, 최근 활동 범위 등 사용자가 선택한 설정</li>
+          </ul>
+          <p>
+            PR Side는 브라우저가 이미 관리하고 있는 GitHub 세션을 사용합니다. GitHub
+            비밀번호나 인증 쿠키 값을 읽거나 저장하지 않습니다.
+          </p>
+
+          <h3>정보 이용 목적</h3>
+          <p>
+            GitHub PR 정보는 사용자가 요청한 Chrome 탭과 탭 그룹을 생성·업데이트·삭제하기
+            위해 사용자의 브라우저 안에서만 처리됩니다. PR Side는 이 정보를 분석,
+            광고, 프로파일링, 신용 판단 또는 관련 없는 목적으로 사용하지 않습니다.
+          </p>
+
+          <h3>저장 및 보유</h3>
+          <ul>
+            <li>
+              사용자 설정은 <code>chrome.storage.sync</code>에 저장됩니다. Chrome 동기화를
+              활성화한 경우 Chrome이 사용자의 브라우저 간에 이 설정을 동기화할 수 있습니다.
+            </li>
+            <li>
+              마지막 동기화 상태, PR 개수, Chrome 탭 그룹 식별자는 사용자의 기기에 있는
+              <code>chrome.storage.local</code>에 저장됩니다.
+            </li>
+          </ul>
+          <p>
+            PR Side는 PR 제목, URL, 저장소 이름 또는 페이지 내용을
+            <code>chrome.storage</code>나 개발자가 운영하는 서버에 저장하지 않습니다.
+            확장 프로그램을 제거하거나 Chrome에서 확장 프로그램 데이터를 삭제하면 로컬
+            설정과 상태를 제거할 수 있습니다. 동기화된 설정은 Chrome 동기화 설정에서도
+            관리할 수 있습니다.
+          </p>
+
+          <h3>네트워크 통신 및 공유</h3>
+          <p>
+            PR Side는 <a href="https://github.com">github.com</a>에서 PR 페이지를 가져오는 데
+            필요한 HTTPS 요청만 보냅니다. 이 요청은 브라우저의 기존 GitHub 세션을 사용하며
+            GitHub의 개인정보 보호 기준이 적용됩니다.
+          </p>
+          <p>
+            PR Side에는 개발자가 운영하는 애플리케이션 서버가 없습니다. GitHub PR 정보를
+            PR Side 개발자, 광고 네트워크, 분석 서비스, 데이터 중개업체 또는 기타
+            제3자에게 전송하거나 판매하지 않습니다. Chrome은 사용자의 Chrome 동기화 설정과
+            Google의 관련 개인정보 보호 기준에 따라 <code>chrome.storage.sync</code>에 저장된
+            비콘텐츠 설정을 동기화할 수 있습니다.
+          </p>
+
+          <h3>이 개인정보처리방침 웹사이트</h3>
+          <p>
+            이 개인정보처리방침 페이지는 Cloudflare에서 호스팅됩니다. PR Side는 이 페이지에
+            분석 도구, 광고 스크립트, 추적 픽셀 또는 쿠키를 추가하지 않습니다. Cloudflare는
+            페이지 제공 및 보호를 위해 IP 주소나 보안 로그 같은 일반적인 요청 정보를
+            Cloudflare의 관련 개인정보 보호 기준에 따라 처리할 수 있습니다. 이 페이지 방문은
+            PR Side 확장 프로그램 사용과 별개입니다.
+          </p>
+
+          <h3>권한</h3>
+          <ul>
+            <li>
+              <code>https://github.com/*</code>: 작성 PR 및 리뷰 요청 PR 페이지를 가져오고
+              해당 PR을 엽니다.
+            </li>
+            <li>
+              <code>tabs</code>, <code>tabGroups</code>: PR Side가 관리하는 GitHub PR 탭을
+              찾고 생성·그룹화·업데이트·삭제합니다.
+            </li>
+            <li><code>storage</code>: 사용자 설정과 로컬 동기화 상태를 저장합니다.</li>
+            <li><code>alarms</code>: 사용자가 선택한 주기에 맞춰 동기화를 실행합니다.</li>
+          </ul>
+
+          <h3>제한적 사용</h3>
+          <p>
+            PR Side는 Chrome API에서 받은 정보를 Chrome Web Store 사용자 데이터 정책과
+            제한적 사용 요건에 따라 처리합니다. 이 정보는 사용자에게 보이는 PR Side의 단일
+            목적을 제공하거나 개선하는 용도로만 사용됩니다. 광고를 위해 전송하거나 데이터
+            중개업체에 판매하지 않으며, 신용도 또는 대출 판단에 사용하지 않습니다. 법률상
+            요구되거나 사용자가 지원을 위해 명시적으로 요청한 경우를 제외하고 사람이 읽을
+            수 있도록 제공하지 않습니다.
+          </p>
+
+          <h3>보안</h3>
+          <p>
+            PR Side가 보내는 모든 GitHub 요청은 HTTPS를 사용합니다. 원격으로 호스팅된 코드를
+            불러오거나 실행하지 않습니다.
+          </p>
+
+          <h3>방침 변경</h3>
+          <p>
+            중요한 변경 사항은 해당 확장 프로그램 업데이트를 출시하기 전에 변경된 시행일과
+            함께 이 URL에 게시됩니다.
+          </p>
+
+          <h3>문의</h3>
+          <p>
+            개인정보 관련 문의는 PR Side Chrome Web Store 페이지에 표시된 지원 연락처를
+            통해 접수할 수 있습니다.
+          </p>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer shell">
+      PR Side is an independent extension and is not affiliated with or endorsed by GitHub.
+    </footer>
+  </body>
+</html>
