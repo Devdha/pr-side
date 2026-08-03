@@ -1,12 +1,15 @@
+
 # PR Side
 
 An unofficial Chrome extension that automatically organizes your GitHub pull
-requests into Chrome tab groups — an Arc-style "pinned folder" for the PRs
+requests into Chrome tab groups - an Arc-style "pinned folder" for the PRs
 you authored and the ones waiting on your review.
+
+<img width="1280" height="800" alt="02-pr-groups-dark" src="https://github.com/user-attachments/assets/24b6492b-31fa-47be-88d8-f8697e9c5351" />
 
 ## Features
 
-- **Automatic sync** of two tab groups — PRs you authored and PRs where
+- **Automatic sync** of two tab groups - PRs you authored and PRs where
   you're a requested reviewer — kept up to date on a timer and via a manual
   "Sync now" button.
 - **Automatic cleanup** of tabs for PRs that have been merged or closed.
