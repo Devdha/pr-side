@@ -3,3 +3,4 @@ dist/
 .omc/
 .superpowers/
 release/
+.DS_Store
