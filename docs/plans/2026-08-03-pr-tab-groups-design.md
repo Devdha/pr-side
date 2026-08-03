@@ -13,15 +13,15 @@ Arc 브라우저의 고정 탭 폴더처럼, 내가 올린 PR과 내가 리뷰�
   파서/데이터 소스는 어댑터 인터페이스로 분리해 실패 시 OAuth 어댑터로 교체 가능하게 한다.
 - **동기화**: `chrome.alarms` 주기 자동(기본 5분) + 팝업의 수동 동기화 버튼.
 - **탭 정리**: 머지/닫힌 PR의 탭은 자동으로 닫는다.
-- **그룹 구성**: 설정으로 선택 — 통합 "PR" 그룹 1개 또는 "내 PR" / "리뷰 요청" 2개(기본: 2개).
+- **그룹 구성**: 설정으로 선택 - 통합 "PR" 그룹 1개 또는 "내 PR" / "리뷰 요청" 2개(기본: 2개).
 
 ## 아키텍처 (Manifest V3)
 
-- `manifest.json` — permissions: `tabs`, `tabGroups`, `storage`, `alarms`,
+- `manifest.json` - permissions: `tabs`, `tabGroups`, `storage`, `alarms`,
   host_permissions: `https://github.com/*`
-- **background service worker** — 동기화 엔진 (alarm + 팝업 메시지 트리거)
-- **popup** — 지금 동기화 버튼, 마지막 동기화 시각, 로그인 상태, PR 개수
-- **options** — 그룹 모드, 동기화 주기
+- **background service worker** - 동기화 엔진 (alarm + 팝업 메시지 트리거)
+- **popup** - 지금 동기화 버튼, 마지막 동기화 시각, 로그인 상태, PR 개수
+- **options** - 그룹 모드, 동기화 주기
 
 ## 데이터 흐름
 
@@ -50,4 +50,4 @@ Arc 브라우저의 고정 탭 폴더처럼, 내가 올린 PR과 내가 리뷰�
 
 - TypeScript, vanilla (프레임워크 없음)
 - esbuild로 번들 (`build.mjs`), 정적 파일 복사 → `dist/`를 unpacked로 로드
-- vitest — 파서·로그아웃 감지 등 순수 함수 단위 테스트 (fixture HTML)
+- vitest - 파서·로그아웃 감지 등 순수 함수 단위 테스트 (fixture HTML)
