@@ -10,6 +10,10 @@ function extractUpdatedAt(obj: Record<string, unknown>): string | undefined {
   return undefined;
 }
 
+function extractIsDraft(obj: Record<string, unknown>): boolean | undefined {
+  return typeof obj.isDraft === "boolean" ? obj.isDraft : undefined;
+}
+
 function stripTags(html: string): string {
   return html
     .replace(/<[^>]*>/g, "")
@@ -64,6 +68,9 @@ export function parsePullsHtml(html: string): PrRef[] {
       if (!existing.updatedAt && pr.updatedAt) {
         existing.updatedAt = pr.updatedAt;
       }
+      if (existing.isDraft === undefined && pr.isDraft !== undefined) {
+        existing.isDraft = pr.isDraft;
+      }
       continue;
     }
     seen.set(key, pr);
@@ -113,10 +120,14 @@ function collectPrNodes(node: unknown, seen: Map<string, PrRef>, depth: number):
             : undefined;
       const title = rawTitle ? stripTags(rawTitle) : undefined;
       const updatedAt = extractUpdatedAt(obj);
+      const isDraft = extractIsDraft(obj);
       const existing = seen.get(key);
       if (existing) {
         if (!existing.title && title) existing.title = title;
         if (!existing.updatedAt && updatedAt) existing.updatedAt = updatedAt;
+        if (existing.isDraft === undefined && isDraft !== undefined) {
+          existing.isDraft = isDraft;
+        }
       } else {
         seen.set(key, {
           owner,
@@ -124,6 +135,7 @@ function collectPrNodes(node: unknown, seen: Map<string, PrRef>, depth: number):
           number,
           ...(title ? { title } : {}),
           ...(updatedAt ? { updatedAt } : {}),
+          ...(isDraft !== undefined ? { isDraft } : {}),
         });
       }
     }
@@ -157,11 +169,15 @@ function collectPrNodes(node: unknown, seen: Map<string, PrRef>, depth: number):
           : undefined;
     const title = rawTitle ? stripTags(rawTitle) : undefined;
     const updatedAt = extractUpdatedAt(obj);
+    const isDraft = extractIsDraft(obj);
 
     const existing = seen.get(key);
     if (existing) {
       if (!existing.title && title) existing.title = title;
       if (!existing.updatedAt && updatedAt) existing.updatedAt = updatedAt;
+      if (existing.isDraft === undefined && isDraft !== undefined) {
+        existing.isDraft = isDraft;
+      }
     } else {
       seen.set(key, {
         owner,
@@ -169,6 +185,7 @@ function collectPrNodes(node: unknown, seen: Map<string, PrRef>, depth: number):
         number,
         ...(title ? { title } : {}),
         ...(updatedAt ? { updatedAt } : {}),
+        ...(isDraft !== undefined ? { isDraft } : {}),
       });
     }
   }
@@ -195,6 +212,88 @@ export function parseEmbeddedData(html: string): PrRef[] {
   }
 
   return Array.from(seen.values());
+}
+
+export type PrPageState = "open" | "merged" | "closed" | "unknown";
+
+interface PrStateHit {
+  value: Exclude<PrPageState, "unknown">;
+  /** __typename이 "PullRequest"인 노드에서 나온 값이면 더 신뢰할 수 있다. */
+  typed: boolean;
+}
+
+function normalizeStateValue(raw: string): Exclude<PrPageState, "unknown"> | undefined {
+  switch (raw.toUpperCase()) {
+    case "OPEN":
+      return "open";
+    case "MERGED":
+      return "merged";
+    case "CLOSED":
+      return "closed";
+    default:
+      return undefined;
+  }
+}
+
+function collectPrStateHits(node: unknown, hits: PrStateHit[], depth: number): void {
+  if (depth > MAX_WALK_DEPTH || node === null || typeof node !== "object") {
+    return;
+  }
+
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      collectPrStateHits(item, hits, depth + 1);
+    }
+    return;
+  }
+
+  const obj = node as Record<string, unknown>;
+  const raw =
+    typeof obj.state === "string"
+      ? obj.state
+      : typeof obj.displayState === "string"
+        ? obj.displayState
+        : undefined;
+  if (raw) {
+    const value = normalizeStateValue(raw);
+    if (value) {
+      hits.push({ value, typed: obj.__typename === "PullRequest" });
+    }
+  }
+
+  for (const value of Object.values(obj)) {
+    collectPrStateHits(value, hits, depth + 1);
+  }
+}
+
+/**
+ * 단일 PR 페이지 HTML(embedded JSON)에서 그 PR의 open/merged/closed 상태를
+ * 판별한다. "리뷰한 PR 유지" 기능이 후보 PR이 아직 열려 있는지 확인하는 데
+ * 쓴다. __typename이 "PullRequest"인 노드의 state/displayState를 우선하고,
+ * 없으면 처음 발견되는 state/displayState 값으로 대체한다. 판별 불가면
+ * "unknown"을 반환한다(안전하게 "열려 있을 수 있음"으로 취급하도록).
+ */
+export function parsePrPageState(html: string): PrPageState {
+  const hits: PrStateHit[] = [];
+
+  let match: RegExpExecArray | null;
+  EMBEDDED_DATA_RE.lastIndex = 0;
+  while ((match = EMBEDDED_DATA_RE.exec(html)) !== null) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(match[1]);
+    } catch {
+      continue;
+    }
+    collectPrStateHits(parsed, hits, 0);
+  }
+
+  const typedHit = hits.find((hit) => hit.typed);
+  if (typedHit) return typedHit.value;
+
+  if (hits.length > 0) return hits[0].value;
+
+  return "unknown";
 }
 
 export function isLoggedOut(finalUrl: string, html: string): boolean {

@@ -52,4 +52,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
 onSettingsChanged(() => {
   void setupAlarm();
+  // 필터/그룹 모드 등을 바꾸면 다음 알람까지 기다리지 않고 바로 반영한다.
+  // 동시 실행은 syncAll의 in-flight 뮤텍스가 처리한다.
+  void syncAll();
 });

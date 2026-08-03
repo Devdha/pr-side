@@ -2,13 +2,18 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildFailureStatus,
   classifyUnmatchedTab,
+  computeTabOrder,
+  findReviewedCandidates,
   needsTitleReload,
   pickAdoptionCandidate,
   pickDuplicateTabsToClose,
+  pickStaleReviewedKeepKeys,
   resolveSuspectState,
+  reviewedKeepToPrRefs,
   syncAll,
+  type ReviewedKeepEntry,
 } from "../src/lib/sync.js";
-import type { SyncStatus } from "../src/lib/types.js";
+import type { PrRef, SyncStatus } from "../src/lib/types.js";
 
 describe("needsTitleReload", () => {
   it("discard되지 않은 탭은 false", () => {
@@ -766,5 +771,691 @@ describe("syncAll group adoption and merge on restart", () => {
       state: { groupIds: Record<string, number> };
     };
     expect(savedState.state.groupIds.authored).toBe(10);
+  });
+});
+
+function pr(overrides: Partial<PrRef> = {}): PrRef {
+  return {
+    owner: "octocat",
+    repo: "hello-world",
+    number: 1,
+    ...overrides,
+  };
+}
+
+describe("computeTabOrder", () => {
+  it("prs 순서대로 tabId를 반환한다", () => {
+    const tabs = [
+      { id: 101, key: "octocat/hello-world#1" },
+      { id: 102, key: "octocat/hello-world#2" },
+      { id: 103, key: "octocat/hello-world#3" },
+    ];
+    const prs = [
+      pr({ number: 3 }),
+      pr({ number: 1 }),
+      pr({ number: 2 }),
+    ];
+    expect(computeTabOrder(tabs, prs)).toEqual([103, 101, 102]);
+  });
+
+  it("prs에 없는 남은 탭은 유실 방지를 위해 끝에 붙인다", () => {
+    const tabs = [
+      { id: 101, key: "octocat/hello-world#1" },
+      { id: 102, key: "octocat/hello-world#2" },
+    ];
+    const prs = [pr({ number: 2 })];
+    expect(computeTabOrder(tabs, prs)).toEqual([102, 101]);
+  });
+
+  it("빈 입력이면 빈 배열을 반환한다", () => {
+    expect(computeTabOrder([], [])).toEqual([]);
+  });
+});
+
+describe("findReviewedCandidates", () => {
+  it("직전엔 있었는데 이번엔 사라졌고 authored에도 없는 키를 후보로 고른다", () => {
+    const result = findReviewedCandidates(
+      ["o/r#1", "o/r#2", "o/r#3"],
+      ["o/r#2"],
+      [],
+    );
+    expect(result).toEqual(["o/r#1", "o/r#3"]);
+  });
+
+  it("여전히 review 목록에 있는 키는 후보에서 제외한다", () => {
+    const result = findReviewedCandidates(["o/r#1"], ["o/r#1"], []);
+    expect(result).toEqual([]);
+  });
+
+  it("authored로 옮겨간 키는 후보에서 제외한다", () => {
+    const result = findReviewedCandidates(["o/r#1", "o/r#2"], [], ["o/r#1"]);
+    expect(result).toEqual(["o/r#2"]);
+  });
+
+  it("직전 목록이 비어있으면 후보도 없다", () => {
+    expect(findReviewedCandidates([], ["o/r#1"], [])).toEqual([]);
+  });
+});
+
+describe("pickStaleReviewedKeepKeys", () => {
+  function entry(lastCheckedAt: number): ReviewedKeepEntry {
+    return { url: "https://github.com/o/r/pull/1", lastCheckedAt };
+  }
+
+  it("lastCheckedAt이 오래된 순으로 최대 limit개를 반환한다", () => {
+    const reviewedKeep: Record<string, ReviewedKeepEntry> = {
+      "o/r#1": entry(300),
+      "o/r#2": entry(100),
+      "o/r#3": entry(200),
+    };
+    expect(pickStaleReviewedKeepKeys(reviewedKeep, 2)).toEqual(["o/r#2", "o/r#3"]);
+  });
+
+  it("항목이 limit보다 적으면 전부 반환한다", () => {
+    const reviewedKeep: Record<string, ReviewedKeepEntry> = {
+      "o/r#1": entry(100),
+    };
+    expect(pickStaleReviewedKeepKeys(reviewedKeep, 5)).toEqual(["o/r#1"]);
+  });
+
+  it("빈 맵이면 빈 배열을 반환한다", () => {
+    expect(pickStaleReviewedKeepKeys({}, 5)).toEqual([]);
+  });
+
+  it("lastCheckedAt=0(fetch 실패)인 항목이 최우선으로 선택된다", () => {
+    const reviewedKeep: Record<string, ReviewedKeepEntry> = {
+      "o/r#1": entry(999),
+      "o/r#2": entry(0),
+    };
+    expect(pickStaleReviewedKeepKeys(reviewedKeep, 1)).toEqual(["o/r#2"]);
+  });
+});
+
+describe("reviewedKeepToPrRefs", () => {
+  it("url을 owner/repo/number로 역파싱하고 title/updatedAt을 채운다", () => {
+    const reviewedKeep: Record<string, ReviewedKeepEntry> = {
+      "octocat/hello-world#1": {
+        url: "https://github.com/octocat/hello-world/pull/1",
+        title: "fix: something",
+        updatedAt: "2026-07-01T00:00:00Z",
+        lastCheckedAt: 100,
+      },
+    };
+    expect(reviewedKeepToPrRefs(reviewedKeep)).toEqual([
+      {
+        owner: "octocat",
+        repo: "hello-world",
+        number: 1,
+        title: "fix: something",
+        updatedAt: "2026-07-01T00:00:00Z",
+      },
+    ]);
+  });
+
+  it("title/updatedAt이 없어도 owner/repo/number만으로 변환한다", () => {
+    const reviewedKeep: Record<string, ReviewedKeepEntry> = {
+      "octocat/hello-world#2": {
+        url: "https://github.com/octocat/hello-world/pull/2",
+        lastCheckedAt: 100,
+      },
+    };
+    expect(reviewedKeepToPrRefs(reviewedKeep)).toEqual([
+      { owner: "octocat", repo: "hello-world", number: 2 },
+    ]);
+  });
+
+  it("url을 역파싱할 수 없는 손상된 항목은 건너뛴다", () => {
+    const reviewedKeep: Record<string, ReviewedKeepEntry> = {
+      broken: { url: "not-a-valid-url", lastCheckedAt: 0 },
+    };
+    expect(reviewedKeepToPrRefs(reviewedKeep)).toEqual([]);
+  });
+
+  it("빈 맵이면 빈 배열을 반환한다", () => {
+    expect(reviewedKeepToPrRefs({})).toEqual([]);
+  });
+});
+
+describe("syncAll keepReviewedPrs integration", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("review-requested에서 사라진 PR이 아직 open이면 리뷰 요청 그룹에 유지하고 탭을 만든다", async () => {
+    const localSet = vi.fn(async (_value: unknown) => undefined);
+    const createdTabs: { url: string }[] = [];
+    let nextTabId = 500;
+
+    const prPageHtml = `<script type="application/json" data-target="react-app.embeddedData">${JSON.stringify(
+      {
+        node: {
+          __typename: "PullRequest",
+          number: 2,
+          repository: { name: "hello-world", owner: { login: "octocat" } },
+          state: "OPEN",
+          titleHtml: "fix: reviewed PR",
+          updatedAt: "2026-07-15T00:00:00Z",
+        },
+      },
+    )}</script>`;
+
+    const fetchPrPageHtml = vi.fn(async () => prPageHtml);
+    const setBadgeText = vi.fn(async () => undefined);
+    const setBadgeBackgroundColor = vi.fn(async () => undefined);
+
+    vi.stubGlobal("chrome", {
+      i18n: {
+        getMessage: (key: string) =>
+          ({ groupAuthored: "My PRs", groupReview: "Review requests" })[key] ?? "",
+        getUILanguage: () => "en-US",
+      },
+      storage: {
+        sync: {
+          get: async () => ({
+            settings: {
+              groupMode: "split",
+              syncIntervalMinutes: 5,
+              maxAgeDays: 0,
+              excludeDrafts: false,
+              keepReviewedPrs: true,
+            },
+          }),
+        },
+        local: {
+          get: async () => ({
+            state: {
+              groupIds: {},
+              // status.reviewCount는 lastReviewKeys와 독립적인 필드다. 0으로
+              // 두어 resolveSuspectState의 "직전>0 → 이번 0" 의심 판정이 이
+              // 테스트에서는 트리거되지 않게 한다(suspect 경로는 별도로
+              // 검증됨).
+              status: { state: "ok", authoredCount: 0, reviewCount: 0 },
+              reviewedKeep: {},
+              lastReviewKeys: ["octocat/hello-world#2"],
+            },
+          }),
+          set: localSet,
+        },
+      },
+      tabGroups: {
+        TAB_GROUP_ID_NONE: -1,
+        query: async () => [],
+        update: async () => undefined,
+      },
+      tabs: {
+        query: async () => [],
+        create: async ({ url }: { url: string }) => {
+          createdTabs.push({ url });
+          const id = nextTabId++;
+          return { id, url };
+        },
+        group: async () => 900,
+        remove: async () => undefined,
+        ungroup: async () => undefined,
+      },
+      windows: {
+        getLastFocused: async () => ({ id: 1 }),
+      },
+      action: { setBadgeText, setBadgeBackgroundColor },
+    });
+
+    const source = {
+      fetchAuthored: async () => [],
+      fetchReviewRequested: async () => [], // PR#2가 사라짐(리뷰를 남겼을 가능성)
+      fetchPrPageHtml,
+    };
+
+    const status = await syncAll(source);
+
+    expect(status.state).toBe("ok");
+    // pending 리뷰 요청 개수만(유지 중인 PR 제외)
+    expect(status.reviewCount).toBe(0);
+
+    expect(fetchPrPageHtml).toHaveBeenCalledWith({
+      owner: "octocat",
+      repo: "hello-world",
+      number: 2,
+    });
+
+    expect(createdTabs).toContainEqual({
+      url: "https://github.com/octocat/hello-world/pull/2",
+    });
+
+    expect(setBadgeText).toHaveBeenCalledWith({ text: "" });
+
+    const savedState = localSet.mock.calls[0]?.[0] as {
+      state: {
+        reviewedKeep: Record<string, { title?: string; updatedAt?: string }>;
+        lastReviewKeys: string[];
+      };
+    };
+    const kept = savedState.state.reviewedKeep["octocat/hello-world#2"];
+    expect(kept).toBeDefined();
+    expect(kept.title).toBe("fix: reviewed PR");
+    expect(kept.updatedAt).toBe("2026-07-15T00:00:00Z");
+    expect(savedState.state.lastReviewKeys).toEqual([]);
+  });
+
+  it("재검증에서 merged/closed로 확인되면 reviewedKeep에서 제거한다", async () => {
+    const localSet = vi.fn(async (_value: unknown) => undefined);
+
+    const mergedHtml = `<script type="application/json" data-target="react-app.embeddedData">${JSON.stringify(
+      { node: { __typename: "PullRequest", number: 3, state: "MERGED" } },
+    )}</script>`;
+    const fetchPrPageHtml = vi.fn(async () => mergedHtml);
+
+    vi.stubGlobal("chrome", {
+      i18n: {
+        getMessage: (key: string) =>
+          ({ groupAuthored: "My PRs", groupReview: "Review requests" })[key] ?? "",
+        getUILanguage: () => "en-US",
+      },
+      storage: {
+        sync: {
+          get: async () => ({
+            settings: {
+              groupMode: "split",
+              syncIntervalMinutes: 5,
+              maxAgeDays: 0,
+              excludeDrafts: false,
+              keepReviewedPrs: true,
+            },
+          }),
+        },
+        local: {
+          get: async () => ({
+            state: {
+              groupIds: {},
+              status: { state: "ok", authoredCount: 0, reviewCount: 0 },
+              reviewedKeep: {
+                "octocat/hello-world#3": {
+                  url: "https://github.com/octocat/hello-world/pull/3",
+                  lastCheckedAt: 0,
+                },
+              },
+              lastReviewKeys: [],
+            },
+          }),
+          set: localSet,
+        },
+      },
+      tabGroups: { TAB_GROUP_ID_NONE: -1, query: async () => [], update: async () => undefined },
+      tabs: {
+        query: async () => [],
+        create: async () => ({ id: 1 }),
+        group: async () => 1,
+        remove: async () => undefined,
+        ungroup: async () => undefined,
+      },
+      windows: { getLastFocused: async () => ({ id: 1 }) },
+      action: {
+        setBadgeText: vi.fn(async () => undefined),
+        setBadgeBackgroundColor: vi.fn(async () => undefined),
+      },
+    });
+
+    const source = {
+      fetchAuthored: async () => [],
+      fetchReviewRequested: async () => [],
+      fetchPrPageHtml,
+    };
+
+    await syncAll(source);
+
+    expect(fetchPrPageHtml).toHaveBeenCalledWith({
+      owner: "octocat",
+      repo: "hello-world",
+      number: 3,
+    });
+
+    const savedState = localSet.mock.calls[0]?.[0] as {
+      state: { reviewedKeep: Record<string, unknown> };
+    };
+    expect(savedState.state.reviewedKeep["octocat/hello-world#3"]).toBeUndefined();
+  });
+
+  it("keepReviewedPrs가 false면 reviewedKeep을 전부 비우고 후보 fetch를 건너뛴다", async () => {
+    const localSet = vi.fn(async (_value: unknown) => undefined);
+    const fetchPrPageHtml = vi.fn(async () => "<html></html>");
+
+    vi.stubGlobal("chrome", {
+      i18n: {
+        getMessage: (key: string) =>
+          ({ groupAuthored: "My PRs", groupReview: "Review requests" })[key] ?? "",
+        getUILanguage: () => "en-US",
+      },
+      storage: {
+        sync: {
+          get: async () => ({
+            settings: {
+              groupMode: "split",
+              syncIntervalMinutes: 5,
+              maxAgeDays: 0,
+              excludeDrafts: false,
+              keepReviewedPrs: false,
+            },
+          }),
+        },
+        local: {
+          get: async () => ({
+            state: {
+              groupIds: {},
+              status: { state: "ok", authoredCount: 0, reviewCount: 0 },
+              reviewedKeep: {
+                "octocat/hello-world#9": {
+                  url: "https://github.com/octocat/hello-world/pull/9",
+                  lastCheckedAt: 100,
+                },
+              },
+              lastReviewKeys: ["octocat/hello-world#2"],
+            },
+          }),
+          set: localSet,
+        },
+      },
+      tabGroups: { TAB_GROUP_ID_NONE: -1, query: async () => [], update: async () => undefined },
+      tabs: { query: async () => [], remove: async () => undefined, ungroup: async () => undefined },
+      windows: { getLastFocused: async () => ({ id: 1 }) },
+      action: {
+        setBadgeText: vi.fn(async () => undefined),
+        setBadgeBackgroundColor: vi.fn(async () => undefined),
+      },
+    });
+
+    const source = {
+      fetchAuthored: async () => [],
+      fetchReviewRequested: async () => [],
+      fetchPrPageHtml,
+    };
+
+    await syncAll(source);
+
+    expect(fetchPrPageHtml).not.toHaveBeenCalled();
+
+    const savedState = localSet.mock.calls[0]?.[0] as {
+      state: { reviewedKeep: Record<string, unknown> };
+    };
+    expect(savedState.state.reviewedKeep).toEqual({});
+  });
+});
+
+describe("syncAll toolbar badge", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function stubChromeForBadge(reviewCount: number) {
+    return {
+      i18n: {
+        getMessage: (key: string) =>
+          ({ groupAuthored: "My PRs", groupReview: "Review requests" })[key] ?? "",
+        getUILanguage: () => "en-US",
+      },
+      storage: {
+        sync: {
+          get: async () => ({
+            settings: {
+              groupMode: "split",
+              syncIntervalMinutes: 5,
+              maxAgeDays: 0,
+              excludeDrafts: false,
+              keepReviewedPrs: false,
+            },
+          }),
+        },
+        local: {
+          get: async () => ({
+            state: { groupIds: {}, status: { state: "ok" } },
+          }),
+          set: vi.fn(async () => undefined),
+        },
+      },
+      tabGroups: { TAB_GROUP_ID_NONE: -1, query: async () => [], update: async () => undefined },
+      tabs: {
+        query: async () => [],
+        create: async () => ({ id: 1 }),
+        group: async () => 1,
+        remove: async () => undefined,
+        ungroup: async () => undefined,
+      },
+      windows: { getLastFocused: async () => ({ id: 1 }) },
+      action: {
+        setBadgeText: vi.fn(async () => undefined),
+        setBadgeBackgroundColor: vi.fn(async () => undefined),
+      },
+    };
+  }
+
+  it("성공 시 pending 리뷰 요청 개수를 배지 텍스트로 설정한다", async () => {
+    const chromeStub = stubChromeForBadge(3);
+    vi.stubGlobal("chrome", chromeStub);
+
+    const source = {
+      fetchAuthored: async () => [],
+      fetchReviewRequested: async () => [
+        { owner: "o", repo: "r", number: 1 },
+        { owner: "o", repo: "r", number: 2 },
+        { owner: "o", repo: "r", number: 3 },
+      ],
+    };
+
+    await syncAll(source);
+
+    expect(chromeStub.action.setBadgeText).toHaveBeenCalledWith({ text: "3" });
+    expect(chromeStub.action.setBadgeBackgroundColor).toHaveBeenCalledWith({
+      color: "#d29922",
+    });
+  });
+
+  it("리뷰 요청이 0개면 배지 텍스트를 비운다", async () => {
+    const chromeStub = stubChromeForBadge(0);
+    vi.stubGlobal("chrome", chromeStub);
+
+    const source = { fetchAuthored: async () => [], fetchReviewRequested: async () => [] };
+
+    await syncAll(source);
+
+    expect(chromeStub.action.setBadgeText).toHaveBeenCalledWith({ text: "" });
+  });
+
+  it("에러/로그아웃 상태에서는 배지를 건드리지 않는다", async () => {
+    const chromeStub = stubChromeForBadge(0);
+    vi.stubGlobal("chrome", chromeStub);
+
+    const source = {
+      fetchAuthored: async () => {
+        throw new Error("network down");
+      },
+      fetchReviewRequested: async () => [],
+    };
+
+    const status = await syncAll(source);
+
+    expect(status.state).toBe("error");
+    expect(chromeStub.action.setBadgeText).not.toHaveBeenCalled();
+    expect(chromeStub.action.setBadgeBackgroundColor).not.toHaveBeenCalled();
+  });
+});
+
+describe("syncGroup reorders tabs by recency", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("최근 활동 내림차순으로 다르면 chrome.tabs.move 후 다시 그룹에 포함시킨다", async () => {
+    const move = vi.fn(async (tabIds: number[]) => tabIds);
+    const group = vi.fn(async () => 11);
+    const update = vi.fn(async () => undefined);
+    const localSet = vi.fn(async (_value: unknown) => undefined);
+
+    const makeTab = (
+      id: number,
+      index: number,
+      url: string,
+    ): chrome.tabs.Tab => ({
+      id,
+      index,
+      pinned: false,
+      highlighted: false,
+      active: false,
+      incognito: false,
+      selected: false,
+      discarded: false,
+      autoDiscardable: true,
+      groupId: 11,
+      windowId: 1,
+      url,
+      title: "some title",
+    });
+
+    // 저장 순서(=현재 탭 순서)는 PR#1, PR#2지만 PR#2가 더 최근이라
+    // 목표 순서는 PR#2, PR#1이어야 한다.
+    const tabPr1 = makeTab(201, 0, "https://github.com/octocat/hello-world/pull/1");
+    const tabPr2 = makeTab(202, 1, "https://github.com/octocat/hello-world/pull/2");
+
+    vi.stubGlobal("chrome", {
+      i18n: {
+        getMessage: (key: string) =>
+          ({ groupAuthored: "My PRs", groupReview: "Review requests" })[key] ?? "",
+        getUILanguage: () => "en-US",
+      },
+      storage: {
+        sync: {
+          get: async () => ({
+            settings: {
+              groupMode: "split",
+              syncIntervalMinutes: 5,
+              maxAgeDays: 0,
+              excludeDrafts: false,
+              keepReviewedPrs: false,
+            },
+          }),
+        },
+        local: {
+          get: async () => ({
+            state: {
+              groupIds: { authored: 11 },
+              status: { state: "ok", authoredCount: 2, reviewCount: 0 },
+            },
+          }),
+          set: localSet,
+        },
+      },
+      tabGroups: {
+        TAB_GROUP_ID_NONE: -1,
+        get: async (groupId: number) => ({ id: groupId }),
+        query: async () => [],
+        update,
+      },
+      tabs: {
+        query: async ({ groupId }: chrome.tabs.QueryInfo) =>
+          groupId === 11 ? [tabPr1, tabPr2] : [],
+        remove: async () => undefined,
+        ungroup: async () => undefined,
+        move,
+        group,
+      },
+      action: {
+        setBadgeText: vi.fn(async () => undefined),
+        setBadgeBackgroundColor: vi.fn(async () => undefined),
+      },
+    });
+
+    const source = {
+      fetchAuthored: async () => [
+        { owner: "octocat", repo: "hello-world", number: 1, updatedAt: "2026-07-01T00:00:00Z" },
+        { owner: "octocat", repo: "hello-world", number: 2, updatedAt: "2026-07-20T00:00:00Z" },
+      ],
+      fetchReviewRequested: async () => [],
+    };
+
+    const status = await syncAll(source);
+
+    expect(status.state).toBe("ok");
+    expect(move).toHaveBeenCalledWith([202, 201], { index: 0, windowId: 1 });
+    expect(group).toHaveBeenCalledWith({ tabIds: [202, 201], groupId: 11 });
+  });
+
+  it("이미 목표 순서와 같으면 chrome.tabs.move를 호출하지 않는다", async () => {
+    const move = vi.fn(async (tabIds: number[]) => tabIds);
+    const update = vi.fn(async () => undefined);
+    const localSet = vi.fn(async (_value: unknown) => undefined);
+
+    const makeTab = (
+      id: number,
+      index: number,
+      url: string,
+    ): chrome.tabs.Tab => ({
+      id,
+      index,
+      pinned: false,
+      highlighted: false,
+      active: false,
+      incognito: false,
+      selected: false,
+      discarded: false,
+      autoDiscardable: true,
+      groupId: 11,
+      windowId: 1,
+      url,
+      title: "some title",
+    });
+
+    // PR#2(최근)가 이미 먼저, PR#1(오래됨)이 나중 - 이미 목표 순서와 같다.
+    const tabPr2 = makeTab(202, 0, "https://github.com/octocat/hello-world/pull/2");
+    const tabPr1 = makeTab(201, 1, "https://github.com/octocat/hello-world/pull/1");
+
+    vi.stubGlobal("chrome", {
+      i18n: {
+        getMessage: (key: string) =>
+          ({ groupAuthored: "My PRs", groupReview: "Review requests" })[key] ?? "",
+        getUILanguage: () => "en-US",
+      },
+      storage: {
+        sync: {
+          get: async () => ({
+            settings: {
+              groupMode: "split",
+              syncIntervalMinutes: 5,
+              maxAgeDays: 0,
+              excludeDrafts: false,
+              keepReviewedPrs: false,
+            },
+          }),
+        },
+        local: {
+          get: async () => ({
+            state: {
+              groupIds: { authored: 11 },
+              status: { state: "ok", authoredCount: 2, reviewCount: 0 },
+            },
+          }),
+          set: localSet,
+        },
+      },
+      tabGroups: {
+        TAB_GROUP_ID_NONE: -1,
+        get: async (groupId: number) => ({ id: groupId }),
+        query: async () => [],
+        update,
+      },
+      tabs: {
+        query: async ({ groupId }: chrome.tabs.QueryInfo) =>
+          groupId === 11 ? [tabPr2, tabPr1] : [],
+        remove: async () => undefined,
+        ungroup: async () => undefined,
+        move,
+      },
+      action: {
+        setBadgeText: vi.fn(async () => undefined),
+        setBadgeBackgroundColor: vi.fn(async () => undefined),
+      },
+    });
+
+    const source = {
+      fetchAuthored: async () => [
+        { owner: "octocat", repo: "hello-world", number: 1, updatedAt: "2026-07-01T00:00:00Z" },
+        { owner: "octocat", repo: "hello-world", number: 2, updatedAt: "2026-07-20T00:00:00Z" },
+      ],
+      fetchReviewRequested: async () => [],
+    };
+
+    await syncAll(source);
+
+    expect(move).not.toHaveBeenCalled();
   });
 });

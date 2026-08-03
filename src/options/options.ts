@@ -11,6 +11,12 @@ const syncIntervalInput = document.getElementById(
   "syncInterval",
 ) as HTMLInputElement;
 const maxAgeDaysInput = document.getElementById("maxAgeDays") as HTMLInputElement;
+const excludeDraftsInput = document.getElementById(
+  "excludeDrafts",
+) as HTMLInputElement;
+const keepReviewedPrsInput = document.getElementById(
+  "keepReviewedPrs",
+) as HTMLInputElement;
 const saveButton = document.getElementById("saveButton") as HTMLButtonElement;
 const saveFeedback = document.getElementById("saveFeedback") as HTMLParagraphElement;
 
@@ -21,6 +27,8 @@ async function render(): Promise<void> {
   }
   syncIntervalInput.value = String(settings.syncIntervalMinutes);
   maxAgeDaysInput.value = String(settings.maxAgeDays);
+  excludeDraftsInput.checked = settings.excludeDrafts;
+  keepReviewedPrsInput.checked = settings.keepReviewedPrs;
 }
 
 function getSelectedGroupMode(): GroupMode {
@@ -37,8 +45,16 @@ async function handleSave(): Promise<void> {
     Number.parseInt(syncIntervalInput.value, 10) || 1,
   );
   const maxAgeDays = Math.max(0, Number.parseInt(maxAgeDaysInput.value, 10) || 0);
+  const excludeDrafts = excludeDraftsInput.checked;
+  const keepReviewedPrs = keepReviewedPrsInput.checked;
 
-  await saveSettings({ groupMode, syncIntervalMinutes, maxAgeDays });
+  await saveSettings({
+    groupMode,
+    syncIntervalMinutes,
+    maxAgeDays,
+    excludeDrafts,
+    keepReviewedPrs,
+  });
 
   saveFeedback.textContent = getMessage("saved", "Saved.");
   setTimeout(() => {

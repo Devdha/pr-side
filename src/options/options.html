@@ -32,6 +32,18 @@
         <span class="hint" data-i18n="showAllHint">0 = show all</span>
       </label>
 
+      <label class="checkbox-label">
+        <input id="excludeDrafts" type="checkbox" />
+        <span data-i18n="excludeDraftsLabel">Exclude draft PRs</span>
+      </label>
+
+      <label class="checkbox-label">
+        <input id="keepReviewedPrs" type="checkbox" />
+        <span data-i18n="keepReviewedPrsLabel"
+          >Keep PRs I've already reviewed open until they're merged or closed</span
+        >
+      </label>
+
       <button id="saveButton" type="button" data-i18n="save">Save</button>
       <p id="saveFeedback" class="save-feedback" role="status"></p>
     </main>

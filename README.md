@@ -27,6 +27,15 @@ you authored and the ones waiting on your review.
 - **Restart-safe grouping**: Chrome tab group IDs change across browser
   restarts. PR Side detects this, adopts the correct restored group by
   title, and merges away any accidental duplicate groups.
+- **Draft PR filter** - optionally exclude draft pull requests from both
+  groups.
+- **Toolbar badge** showing your pending review count at a glance.
+- **Keeps reviewed PRs around**: a PR you've already reviewed stays in the
+  "Review requests" group (instead of disappearing the moment you submit a
+  review) until it's actually merged or closed.
+- **Sorted by recent activity**: tabs within each group are ordered by most
+  recently updated first, and settings changes resync immediately instead of
+  waiting for the next timer tick.
 - **Localized (English / Korean)** UI, following your browser's language.
 
 ## How it works

@@ -157,5 +157,13 @@
   "allCaughtUp": {
     "message": "모두 최신 상태예요",
     "description": "Popup status after a successful synchronization."
+  },
+  "excludeDraftsLabel": {
+    "message": "Draft PR 제외",
+    "description": "Checkbox label to hide draft pull requests."
+  },
+  "keepReviewedPrsLabel": {
+    "message": "이미 리뷰한 PR은 머지/닫힐 때까지 계속 표시",
+    "description": "Checkbox label for keeping already-reviewed PRs in the review group."
   }
 }

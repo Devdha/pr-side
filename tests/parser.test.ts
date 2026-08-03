@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { isLoggedOut, parseEmbeddedData, parsePullsHtml } from "../src/lib/parser.js";
+import {
+  isLoggedOut,
+  parseEmbeddedData,
+  parsePrPageState,
+  parsePullsHtml,
+} from "../src/lib/parser.js";
 
 describe("parsePullsHtml", () => {
   it("여러 PR 링크를 추출한다", () => {
@@ -361,5 +366,142 @@ describe("parsePullsHtml - 신형 pulls 대시보드 (permalink 아이템)", () 
     const prs = parsePullsHtml(html);
     expect(prs).toHaveLength(1);
     expect(prs[0].updatedAt).toBe("2026-06-01T00:00:00Z");
+  });
+});
+
+describe("isDraft 추출", () => {
+  it("permalink 아이템에서 isDraft를 추출한다", () => {
+    const html = `<script type="application/json" data-target="react-app.embeddedData">${JSON.stringify(
+      {
+        payload: {
+          sectionAuthored: {
+            results: [
+              {
+                itemType: "pull_request",
+                permalink: "https://github.com/example-org/example-app/pull/5",
+                repoNameWithOwner: "example-org/example-app",
+                number: 5,
+                title: "WIP: new feature",
+                isDraft: true,
+              },
+              {
+                itemType: "pull_request",
+                permalink: "https://github.com/example-org/example-app/pull/6",
+                repoNameWithOwner: "example-org/example-app",
+                number: 6,
+                title: "Ready PR",
+                isDraft: false,
+              },
+            ],
+          },
+        },
+      },
+    )}</script>`;
+
+    const prs = parsePullsHtml(html);
+    const draft = prs.find((pr) => pr.number === 5);
+    const ready = prs.find((pr) => pr.number === 6);
+    expect(draft?.isDraft).toBe(true);
+    expect(ready?.isDraft).toBe(false);
+  });
+
+  it("isDraft가 없는 아이템은 isDraft가 undefined다", () => {
+    const html = `<script type="application/json" data-target="react-app.embeddedData">${JSON.stringify(
+      {
+        payload: {
+          sectionAuthored: {
+            results: [
+              {
+                itemType: "pull_request",
+                permalink: "https://github.com/example-org/example-app/pull/7",
+                repoNameWithOwner: "example-org/example-app",
+                number: 7,
+                title: "No draft field",
+              },
+            ],
+          },
+        },
+      },
+    )}</script>`;
+
+    const prs = parsePullsHtml(html);
+    expect(prs[0].isDraft).toBeUndefined();
+  });
+
+  it("GraphQL PullRequest 노드에서도 isDraft를 추출한다", () => {
+    const html = `<script type="application/json" data-target="react-app.embeddedData">${JSON.stringify(
+      {
+        node: {
+          __typename: "PullRequest",
+          number: 8,
+          repository: { name: "example-app", owner: { login: "example-org" } },
+          titleHtml: "Draft via GraphQL",
+          isDraft: true,
+        },
+      },
+    )}</script>`;
+
+    const prs = parseEmbeddedData(html);
+    expect(prs).toHaveLength(1);
+    expect(prs[0].isDraft).toBe(true);
+  });
+});
+
+describe("parsePrPageState", () => {
+  function embedScript(payload: unknown): string {
+    return `<script type="application/json" data-target="react-app.embeddedData">${JSON.stringify(payload)}</script>`;
+  }
+
+  it("__typename이 PullRequest인 노드의 state가 OPEN이면 open을 반환한다", () => {
+    const html = embedScript({
+      node: {
+        __typename: "PullRequest",
+        number: 1,
+        state: "OPEN",
+      },
+    });
+    expect(parsePrPageState(html)).toBe("open");
+  });
+
+  it("state가 MERGED면 merged를 반환한다", () => {
+    const html = embedScript({
+      node: { __typename: "PullRequest", number: 1, state: "MERGED" },
+    });
+    expect(parsePrPageState(html)).toBe("merged");
+  });
+
+  it("state가 CLOSED면 closed를 반환한다", () => {
+    const html = embedScript({
+      node: { __typename: "PullRequest", number: 1, state: "CLOSED" },
+    });
+    expect(parsePrPageState(html)).toBe("closed");
+  });
+
+  it("state 대신 displayState만 있어도 판별한다", () => {
+    const html = embedScript({
+      node: { __typename: "PullRequest", number: 1, displayState: "MERGED" },
+    });
+    expect(parsePrPageState(html)).toBe("merged");
+  });
+
+  it("embeddedData가 없거나 state를 찾을 수 없으면 unknown을 반환한다", () => {
+    expect(parsePrPageState("<html><body>no data</body></html>")).toBe("unknown");
+    expect(parsePrPageState(embedScript({ node: { number: 1 } }))).toBe("unknown");
+  });
+
+  it("__typename이 PullRequest인 노드의 state를 다른 노드의 state보다 우선한다", () => {
+    const html = embedScript({
+      timelineItem: { __typename: "IssueComment", state: "CLOSED" },
+      node: { __typename: "PullRequest", number: 1, state: "OPEN" },
+    });
+    expect(parsePrPageState(html)).toBe("open");
+  });
+
+  it("JSON.parse에 실패한 블록은 건너뛰고 다음 블록에서 판별한다", () => {
+    const html = [
+      `<script type="application/json" data-target="react-app.embeddedData">{not valid json,,,}</script>`,
+      embedScript({ node: { __typename: "PullRequest", number: 1, state: "CLOSED" } }),
+    ].join("\n");
+    expect(parsePrPageState(html)).toBe("closed");
   });
 });

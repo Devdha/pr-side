@@ -35,6 +35,8 @@ export const MESSAGE_KEYS = [
   "suspectStatus",
   "syncRequestFailed",
   "allCaughtUp",
+  "excludeDraftsLabel",
+  "keepReviewedPrsLabel",
 ] as const;
 
 export type MessageKey = (typeof MESSAGE_KEYS)[number];

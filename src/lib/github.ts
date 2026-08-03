@@ -1,6 +1,6 @@
 import { isLoggedOut, parsePullsHtml } from "./parser.js";
 import { getMessage } from "./i18n.js";
-import type { PrRef } from "./types.js";
+import { prUrl, type PrRef } from "./types.js";
 
 export class LoggedOutError extends Error {
   constructor(
@@ -17,6 +17,12 @@ export class LoggedOutError extends Error {
 export interface PrSource {
   fetchAuthored(): Promise<PrRef[]>;
   fetchReviewRequested(): Promise<PrRef[]>;
+  /**
+   * 단일 PR 페이지의 HTML을 가져온다. "리뷰한 PR 유지" 기능이 후보 PR의
+   * open/merged/closed 상태를 확인하는 데 사용한다. 선택적(optional)으로 둬서
+   * 이 기능을 지원하지 않는(또는 테스트용) PrSource 구현이 있어도 되게 한다.
+   */
+  fetchPrPageHtml?(pr: { owner: string; repo: string; number: number }): Promise<string>;
 }
 
 // github.com/pulls는 섹션형 대시보드로 바뀌어 ?q= 검색을 무시한다.
@@ -53,5 +59,23 @@ export class CookiePrSource implements PrSource {
     }
 
     return parsePullsHtml(html);
+  }
+
+  async fetchPrPageHtml(pr: {
+    owner: string;
+    repo: string;
+    number: number;
+  }): Promise<string> {
+    const response = await fetch(prUrl(pr), { credentials: "include" });
+    if (!response.ok) {
+      throw new Error(
+        getMessage(
+          "githubHttpError",
+          `GitHub request failed (HTTP ${response.status})`,
+          String(response.status),
+        ),
+      );
+    }
+    return response.text();
   }
 }

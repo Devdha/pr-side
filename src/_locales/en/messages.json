@@ -157,5 +157,13 @@
   "allCaughtUp": {
     "message": "You're all caught up",
     "description": "Popup status after a successful synchronization."
+  },
+  "excludeDraftsLabel": {
+    "message": "Exclude draft PRs",
+    "description": "Checkbox label to hide draft pull requests."
+  },
+  "keepReviewedPrsLabel": {
+    "message": "Keep PRs I've already reviewed open until they're merged or closed",
+    "description": "Checkbox label for keeping already-reviewed PRs in the review group."
   }
 }

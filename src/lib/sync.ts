@@ -1,6 +1,7 @@
-import { filterByAge } from "./filter.js";
+import { excludeDraftPrs, filterByAge, sortPrsByRecency } from "./filter.js";
 import { CookiePrSource, LoggedOutError, type PrSource } from "./github.js";
 import { getGroupTitle, getMessage } from "./i18n.js";
+import { parseEmbeddedData, parsePrPageState } from "./parser.js";
 import { loadSettings } from "./settings.js";
 import { type GroupMode, type PrRef, type SyncStatus, prKey, prUrl } from "./types.js";
 
@@ -15,9 +16,27 @@ interface GroupSpec {
   prs: PrRef[];
 }
 
+/**
+ * "리뷰한 PR 유지" 기능이 storage.local에 보관하는 항목. review-requested
+ * 목록에서 사라졌지만(=리뷰를 남겼을 가능성) merge/close가 아직 확인되지 않은
+ * PR을 계속 "리뷰 요청" 그룹에 표시하기 위한 최소 정보.
+ */
+export interface ReviewedKeepEntry {
+  url: string;
+  title?: string;
+  updatedAt?: string;
+  /** 마지막으로 상태를 재확인한 시각(ms). fetch 실패 시 0으로 두어 다음
+   * sync에서 최우선으로 재검증되게 한다. */
+  lastCheckedAt: number;
+}
+
 interface StoredState {
   groupIds: Partial<Record<GroupKind, number>>;
   status: SyncStatus;
+  reviewedKeep: Record<string, ReviewedKeepEntry>;
+  /** 직전 sync에서 review-requested 목록에 있던 PR 키. 다음 sync에서 어떤 PR이
+   * 새로 사라졌는지(=리뷰했을 가능성) 판단하는 기준선이 된다. */
+  lastReviewKeys: string[];
 }
 
 const STORAGE_KEY = "state";
@@ -28,6 +47,8 @@ async function loadState(): Promise<StoredState> {
   return {
     groupIds: value?.groupIds ?? {},
     status: value?.status ?? { state: "ok" },
+    reviewedKeep: value?.reviewedKeep ?? {},
+    lastReviewKeys: value?.lastReviewKeys ?? [],
   };
 }
 
@@ -43,12 +64,29 @@ export async function readStatus(): Promise<SyncStatus> {
 const TAB_URL_RE =
   /^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)\/pull\/(\d+)(?:[/?#].*)?$/i;
 
-function prKeyFromUrl(url: string | undefined): string | null {
+function parsePrRefFromUrl(
+  url: string | undefined,
+): Pick<PrRef, "owner" | "repo" | "number"> | null {
   if (!url) return null;
   const match = TAB_URL_RE.exec(url);
   if (!match) return null;
   const [, owner, repo, numberStr] = match;
-  return prKey({ owner, repo, number: Number.parseInt(numberStr, 10) });
+  return { owner, repo, number: Number.parseInt(numberStr, 10) };
+}
+
+function prKeyFromUrl(url: string | undefined): string | null {
+  const parsed = parsePrRefFromUrl(url);
+  return parsed ? prKey(parsed) : null;
+}
+
+/** prKey() 형식("owner/repo#123")의 역파싱. */
+function parsePrKeyString(
+  key: string,
+): Pick<PrRef, "owner" | "repo" | "number"> | null {
+  const match = /^([^/]+)\/([^#]+)#(\d+)$/.exec(key);
+  if (!match) return null;
+  const [, owner, repo, numberStr] = match;
+  return { owner, repo, number: Number.parseInt(numberStr, 10) };
 }
 
 // 로딩 중이거나 discard된 탭은 tab.url이 비어 있을 수 있으므로 pendingUrl도 시도한다.
@@ -229,6 +267,198 @@ function buildGroupSpecs(
       prs: reviewOnly,
     },
   ];
+}
+
+const REVIEWED_KEEP_RECHECK_LIMIT = 5;
+
+/**
+ * 직전 review-requested 목록에는 있었지만 이번엔 사라진 PR 중, "리뷰를 남겼을
+ * 가능성"이 있는 후보 키를 고르는 순수 함수. authored 목록에 있는 것은
+ * (내가 작성자가 됐다는 뜻이라) 리뷰 후 사라짐과는 다른 사유이므로 제외한다.
+ */
+export function findReviewedCandidates(
+  lastReviewKeys: string[],
+  currentReviewKeys: string[],
+  authoredKeys: string[],
+): string[] {
+  const currentSet = new Set(currentReviewKeys);
+  const authoredSet = new Set(authoredKeys);
+  return lastReviewKeys.filter(
+    (key) => !currentSet.has(key) && !authoredSet.has(key),
+  );
+}
+
+/**
+ * reviewedKeep 재검증 대상을 고르는 순수 함수. lastCheckedAt이 오래된 순으로
+ * 최대 limit개를 반환한다(0 = fetch 실패로 아직 확인되지 않은 항목 우선).
+ */
+export function pickStaleReviewedKeepKeys(
+  reviewedKeep: Record<string, ReviewedKeepEntry>,
+  limit: number,
+): string[] {
+  return Object.entries(reviewedKeep)
+    .sort((a, b) => a[1].lastCheckedAt - b[1].lastCheckedAt)
+    .slice(0, limit)
+    .map(([key]) => key);
+}
+
+/**
+ * reviewedKeep 저장 항목들을 PrRef 목록으로 변환한다. url을 역파싱할 수 없는
+ * (손상된) 항목은 건너뛴다.
+ */
+export function reviewedKeepToPrRefs(
+  reviewedKeep: Record<string, ReviewedKeepEntry>,
+): PrRef[] {
+  const result: PrRef[] = [];
+  for (const entry of Object.values(reviewedKeep)) {
+    const parsed = parsePrRefFromUrl(entry.url);
+    if (!parsed) continue;
+    result.push({
+      ...parsed,
+      ...(entry.title ? { title: entry.title } : {}),
+      ...(entry.updatedAt ? { updatedAt: entry.updatedAt } : {}),
+    });
+  }
+  return result;
+}
+
+function mergePrLists(primary: PrRef[], extra: PrRef[]): PrRef[] {
+  const merged = new Map<string, PrRef>();
+  for (const pr of primary) {
+    merged.set(prKey(pr), pr);
+  }
+  for (const pr of extra) {
+    const key = prKey(pr);
+    if (!merged.has(key)) {
+      merged.set(key, pr);
+    }
+  }
+  return Array.from(merged.values());
+}
+
+/**
+ * PR 페이지 HTML의 embedded JSON에서(이미 fetch해 state 판별에 쓴 것을
+ * 재활용) 해당 PR의 title/updatedAt을 얻을 수 있으면 채운다. 얻지 못해도
+ * 안전하게 빈 값을 반환한다("얻으면 채움" - 필수 아님).
+ */
+function parsePrMetaFromHtml(
+  html: string,
+  key: string,
+): { title?: string; updatedAt?: string } {
+  const found = parseEmbeddedData(html).find((pr) => prKey(pr) === key);
+  if (!found) return {};
+  return {
+    ...(found.title ? { title: found.title } : {}),
+    ...(found.updatedAt ? { updatedAt: found.updatedAt } : {}),
+  };
+}
+
+async function classifyReviewCandidate(
+  fetchPrPageHtml: NonNullable<PrSource["fetchPrPageHtml"]>,
+  ref: Pick<PrRef, "owner" | "repo" | "number">,
+): Promise<{ ok: true; state: ReturnType<typeof parsePrPageState>; html: string } | { ok: false }> {
+  try {
+    const html = await fetchPrPageHtml(ref);
+    return { ok: true, state: parsePrPageState(html), html };
+  } catch {
+    return { ok: false };
+  }
+}
+
+/**
+ * review-requested 목록에서 사라진(=리뷰를 남겼을 가능성이 있는) PR을
+ * 찾아내 상태를 확인하고, 아직 열려 있으면(open/unknown) reviewedKeep에
+ * 남겨 "리뷰 요청" 그룹 탭이 계속 유지되게 한다. merged/closed로 확인되면
+ * 자연스럽게 그룹 diff에서 정리되도록 추가하지 않는다.
+ *
+ * fetch에 실패한 후보는 다음 사이클까지 탭이 잘못 닫히는 것을 막기 위해
+ * lastCheckedAt=0으로 보수적으로 유지(추가)해 다음 재검증에서 최우선으로
+ * 다시 확인한다.
+ *
+ * state.reviewedKeep / state.lastReviewKeys를 갱신하며, 그룹 diff에 합류시킬
+ * PrRef 목록(review-requested + 유지 중인 PR, dedupe)을 반환한다.
+ */
+async function updateReviewedKeep(
+  state: StoredState,
+  source: PrSource,
+  reviewRequested: PrRef[],
+  authored: PrRef[],
+  maxAgeDays: number,
+  nowMs: number,
+): Promise<PrRef[]> {
+  const currentReviewKeys = reviewRequested.map(prKey);
+  const authoredKeys = authored.map(prKey);
+
+  const fetchPrPageHtml = source.fetchPrPageHtml;
+  if (fetchPrPageHtml) {
+    const candidates = findReviewedCandidates(
+      state.lastReviewKeys,
+      currentReviewKeys,
+      authoredKeys,
+    );
+
+    for (const key of candidates) {
+      const ref = parsePrKeyString(key);
+      if (!ref) continue;
+
+      const result = await classifyReviewCandidate(fetchPrPageHtml, ref);
+      if (!result.ok) {
+        state.reviewedKeep[key] = { url: prUrl(ref), lastCheckedAt: 0 };
+        continue;
+      }
+      if (result.state === "merged" || result.state === "closed") {
+        continue;
+      }
+      const meta = parsePrMetaFromHtml(result.html, key);
+      state.reviewedKeep[key] = {
+        url: prUrl(ref),
+        lastCheckedAt: nowMs,
+        ...(meta.title ? { title: meta.title } : {}),
+        ...(meta.updatedAt ? { updatedAt: meta.updatedAt } : {}),
+      };
+    }
+
+    const staleKeys = pickStaleReviewedKeepKeys(
+      state.reviewedKeep,
+      REVIEWED_KEEP_RECHECK_LIMIT,
+    );
+    for (const key of staleKeys) {
+      const entry = state.reviewedKeep[key];
+      if (!entry) continue;
+      const ref = parsePrRefFromUrl(entry.url);
+      if (!ref) {
+        delete state.reviewedKeep[key];
+        continue;
+      }
+
+      const result = await classifyReviewCandidate(fetchPrPageHtml, ref);
+      if (!result.ok) {
+        // 실패: 그대로 둔다. lastCheckedAt이 여전히 가장 오래된 값이므로
+        // 다음 sync의 pickStaleReviewedKeepKeys에서 다시 우선 선택된다.
+        continue;
+      }
+      if (result.state === "merged" || result.state === "closed") {
+        delete state.reviewedKeep[key];
+      } else {
+        const meta = parsePrMetaFromHtml(result.html, key);
+        state.reviewedKeep[key] = {
+          ...entry,
+          lastCheckedAt: nowMs,
+          ...(meta.title ? { title: meta.title } : {}),
+          ...(meta.updatedAt ? { updatedAt: meta.updatedAt } : {}),
+        };
+      }
+    }
+  }
+
+  state.lastReviewKeys = currentReviewKeys;
+
+  const keepPrs = filterByAge(
+    reviewedKeepToPrRefs(state.reviewedKeep),
+    maxAgeDays,
+    nowMs,
+  );
+  return mergePrLists(reviewRequested, keepPrs);
 }
 
 const SUSPECT_STREAK_LIMIT = 3;
@@ -414,6 +644,76 @@ export function classifyUnmatchedTab(
   return "close";
 }
 
+/**
+ * 그룹 내 탭들을 정렬 목표 순서(prs 순서)에 맞춰 재배치할 tabId 순서를
+ * 계산하는 순수 함수. prs의 순서가 곧 목표 탭 순서다(호출자가 미리
+ * sortPrsByRecency 등으로 정렬해서 넘긴다). tabs에는 있지만 prs에 없는(이론상
+ * diff 이후엔 없어야 하는) 탭은 유실 방지를 위해 끝에 그대로 붙인다.
+ */
+export function computeTabOrder(
+  tabs: { id: number; key: string }[],
+  prs: PrRef[],
+): number[] {
+  const tabByKey = new Map(tabs.map((tab) => [tab.key, tab.id]));
+  const ordered: number[] = [];
+
+  for (const pr of prs) {
+    const key = prKey(pr);
+    const id = tabByKey.get(key);
+    if (id !== undefined) {
+      ordered.push(id);
+      tabByKey.delete(key);
+    }
+  }
+
+  for (const id of tabByKey.values()) {
+    ordered.push(id);
+  }
+
+  return ordered;
+}
+
+/**
+ * 그룹 내 탭을 최근 활동(updatedAt) 내림차순으로 재배치한다. 그룹 탭을
+ * 새로(fresh) 조회해 현재 순서와 목표 순서가 다를 때만 chrome.tabs.move를
+ * 호출하고, 이동 중 그룹을 이탈할 수 있으므로 이동 후 chrome.tabs.group으로
+ * 다시 그룹에 포함시킨다. 실패는 무시한다(다음 sync에서 재시도됨).
+ */
+async function reorderGroupTabs(groupId: number, spec: GroupSpec): Promise<void> {
+  try {
+    const tabs = await chrome.tabs.query({ groupId });
+
+    const tabInfos = tabs
+      .map((tab) => ({ tab, key: tabPrKey(tab) }))
+      .filter(
+        (info): info is { tab: chrome.tabs.Tab; key: string } =>
+          info.key !== null && info.tab.id !== undefined,
+      )
+      .sort((a, b) => a.tab.index - b.tab.index);
+
+    if (tabInfos.length < 2) return;
+
+    const sortedPrs = sortPrsByRecency(spec.prs);
+    const orderedTabIds = computeTabOrder(
+      tabInfos.map((info) => ({ id: info.tab.id as number, key: info.key })),
+      sortedPrs,
+    );
+
+    const currentOrderIds = tabInfos.map((info) => info.tab.id as number);
+    const alreadyOrdered = orderedTabIds.every((id, idx) => id === currentOrderIds[idx]);
+    if (alreadyOrdered) return;
+
+    const minIndex = Math.min(...tabInfos.map((info) => info.tab.index));
+    const windowId = tabInfos[0].tab.windowId;
+
+    await chrome.tabs.move(orderedTabIds, { index: minIndex, windowId });
+    // 이동 중 그룹을 이탈할 수 있으므로 다시 그룹에 확실히 포함시킨다.
+    await chrome.tabs.group({ tabIds: orderedTabIds, groupId });
+  } catch {
+    // 실패는 무시한다 (다음 sync에서 재시도됨).
+  }
+}
+
 async function syncGroup(state: StoredState, spec: GroupSpec): Promise<void> {
   const targetMap = new Map(spec.prs.map((pr) => [prKey(pr), pr]));
   let groupId = await resolveExistingGroup(state, spec);
@@ -502,6 +802,8 @@ async function syncGroup(state: StoredState, spec: GroupSpec): Promise<void> {
   if (missing.length === 0) {
     if (spec.prs.length === 0 && groupId !== undefined) {
       delete state.groupIds[spec.kind];
+    } else if (groupId !== undefined) {
+      await reorderGroupTabs(groupId, spec);
     }
     return;
   }
@@ -549,6 +851,9 @@ async function syncGroup(state: StoredState, spec: GroupSpec): Promise<void> {
   }
 
   if (tabIdsToGroup.length === 0) {
+    if (groupId !== undefined) {
+      await reorderGroupTabs(groupId, spec);
+    }
     return;
   }
 
@@ -579,6 +884,8 @@ async function syncGroup(state: StoredState, spec: GroupSpec): Promise<void> {
   for (const tabId of newlyCreatedTabIds) {
     void discardWhenLoaded(tabId);
   }
+
+  await reorderGroupTabs(resultGroupId, spec);
 }
 
 async function cleanupUnusedGroups(
@@ -606,6 +913,24 @@ async function cleanupUnusedGroups(
   }
 }
 
+const REVIEW_BADGE_COLOR = "#d29922";
+
+/**
+ * 대기 중인(pending) 리뷰 요청 개수를 툴바 뱃지에 반영한다. "리뷰한 PR
+ * 유지"로 그룹에 남아있는 PR은 더 이상 조치가 필요 없으므로 뱃지 개수에
+ * 포함하지 않는다(순수하게 pending 개수만). 뱃지 API 실패는 무시한다.
+ */
+async function updateBadge(pendingReviewCount: number): Promise<void> {
+  try {
+    await chrome.action.setBadgeText({
+      text: pendingReviewCount > 0 ? String(pendingReviewCount) : "",
+    });
+    await chrome.action.setBadgeBackgroundColor({ color: REVIEW_BADGE_COLOR });
+  } catch {
+    // 일부 환경에서 배지 API를 쓸 수 없을 수 있다 - 무시한다.
+  }
+}
+
 async function performSync(source: PrSource): Promise<SyncStatus> {
   const settings = await loadSettings();
   const state = await loadState();
@@ -618,9 +943,12 @@ async function performSync(source: PrSource): Promise<SyncStatus> {
       source.fetchReviewRequested(),
     ]);
 
+    const authoredNoDrafts = excludeDraftPrs(authoredRaw, settings.excludeDrafts);
+    const reviewNoDrafts = excludeDraftPrs(reviewRequestedRaw, settings.excludeDrafts);
+
     const now = Date.now();
-    const authored = filterByAge(authoredRaw, settings.maxAgeDays, now);
-    const reviewRequested = filterByAge(reviewRequestedRaw, settings.maxAgeDays, now);
+    const authored = filterByAge(authoredNoDrafts, settings.maxAgeDays, now);
+    const reviewRequested = filterByAge(reviewNoDrafts, settings.maxAgeDays, now);
 
     const { suspect, streak } = resolveSuspectState(
       state.status,
@@ -631,6 +959,7 @@ async function performSync(source: PrSource): Promise<SyncStatus> {
     if (suspect) {
       // 갑작스러운 0개는 파서/페이지 구조 변경을 의심할 상황이다. 연속 관측이
       // 쌓이기 전까지는 그룹/탭을 일절 건드리지 않고 기존 개수만 유지한다.
+      // reviewedKeep/lastReviewKeys도 오탐 방지를 위해 여기서 건드리지 않는다.
       status = {
         lastSyncAt: now,
         state: "suspect",
@@ -643,7 +972,22 @@ async function performSync(source: PrSource): Promise<SyncStatus> {
       return status;
     }
 
-    const specs = buildGroupSpecs(settings.groupMode, authored, reviewRequested);
+    let reviewGroupPrs = reviewRequested;
+    if (settings.keepReviewedPrs) {
+      reviewGroupPrs = await updateReviewedKeep(
+        state,
+        source,
+        reviewRequested,
+        authored,
+        settings.maxAgeDays,
+        now,
+      );
+    } else {
+      state.reviewedKeep = {};
+      state.lastReviewKeys = reviewRequested.map(prKey);
+    }
+
+    const specs = buildGroupSpecs(settings.groupMode, authored, reviewGroupPrs);
 
     for (const spec of specs) {
       await syncGroup(state, spec);
@@ -658,8 +1002,11 @@ async function performSync(source: PrSource): Promise<SyncStatus> {
       lastSyncAt: Date.now(),
       state: "ok",
       authoredCount: authored.length,
+      // pending 리뷰 요청 개수만(유지 중인 PR은 제외) - 뱃지와 동일한 수치.
       reviewCount: reviewRequested.length,
     };
+
+    await updateBadge(reviewRequested.length);
   } catch (err) {
     const nowMs = Date.now();
     if (err instanceof LoggedOutError) {
