@@ -24,6 +24,9 @@
   - [x] `https://prside.102lab.com/privacy/`에 공개 게시
   - [ ] Chrome Web Store Privacy tab의 Privacy policy URL에 위 주소 입력
 - [x] **스크린샷** 1280x800 영문·한글, 라이트·다크 4장 (`store-assets/screenshots/`)
+- [x] **프로모션 이미지** 공용 무문자 PNG 2장 (`store-assets/promotional/`)
+  - 필수 소형 타일: `small-promo-440x280.png`
+  - 선택형 마키 타일: `marquee-promo-1400x560.png`
 
 ## 쿠키 기반 유지에 따른 필수 방어책 (코드)
 

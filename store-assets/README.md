@@ -1,5 +1,16 @@
 # PR Side Chrome Web Store Assets
 
+## Promotional images
+
+Promotional images are shared across locales, so both assets avoid text and use
+the PR Side icon with an abstract authored-PR/review-request grouping flow.
+
+- Required small promo tile: `promotional/small-promo-440x280.png`
+- Optional marquee promo tile: `promotional/marquee-promo-1400x560.png`
+
+Upload the files without resizing. Both are opaque, full-bleed PNG images in the
+exact dimensions required by the Chrome Web Store.
+
 ## Screenshots
 
 All screenshots are 1280x800 PNG files and use neutral demo pull-request data.
