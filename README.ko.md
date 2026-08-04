@@ -44,7 +44,7 @@ OAuth 앱도, API 토큰도, 외부 서버도 없습니다 - 모든 파싱과 �
 
 ## 설치
 
-**Chrome Web Store:** _(준비 중)_
+**Chrome Web Store:** [PR Side - GitHub PR Tabs](https://chromewebstore.google.com/detail/pr-side-%E2%80%93-github-pr-tabs/apjejiejcelppacljoehpfebopieejea)
 
 **직접 설치 (unpacked):**
 

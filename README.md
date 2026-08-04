@@ -54,7 +54,7 @@ clearing everything.
 
 ## Install
 
-**Chrome Web Store:** _(coming soon)_
+**Chrome Web Store:** [PR Side - GitHub PR Tabs](https://chromewebstore.google.com/detail/pr-side-%E2%80%93-github-pr-tabs/apjejiejcelppacljoehpfebopieejea)
 
 **Manual / unpacked install:**
 
